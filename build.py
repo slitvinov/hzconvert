@@ -1,21 +1,15 @@
 import csv
 import math
-import sys
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parent
-SRC  = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "figshare"
-OUT  = Path(sys.argv[2]) if len(sys.argv) > 2 else HERE / "data.csv"
 
 rename = {}
-with (HERE / "rename.tsv").open() as f:
+with open("rename.tsv") as f:
     next(f)
     for line in f:
         ctx, orig, canon = line.rstrip("\n").split("\t")[:3]
         rename.setdefault(ctx, {})[orig] = canon
 
 order = []
-with (HERE / "rubric.tsv").open() as f:
+with open("rubric.tsv") as f:
     next(f)
     for line in f:
         order.append(line.split("\t", 1)[0])
@@ -23,7 +17,7 @@ with (HERE / "rubric.tsv").open() as f:
 streams = {}
 canon_src = {}
 for tbl, m in rename.items():
-    fp = (SRC / f"{tbl}.csv").open()
+    fp = open(f"figshare/{tbl}.csv")
     rdr = csv.reader(fp)
     header = next(rdr)
     streams[tbl] = (fp, rdr)
@@ -44,7 +38,7 @@ def fmt(v):
     return f"{x:.6g}"
 
 n = 0
-with OUT.open("w", newline="") as out:
+with open("data.csv", "w", newline="") as out:
     out.write("timestamp," + ",".join(order) + "\n")
     while True:
         rows = {}
@@ -64,4 +58,4 @@ with OUT.open("w", newline="") as out:
 
 for fp, _ in streams.values():
     fp.close()
-print(f"wrote {OUT}  ({n:,} rows x {len(order)} cols)")
+print(f"wrote data.csv  ({n:,} rows x {len(order)} cols)")
