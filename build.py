@@ -21,7 +21,8 @@ for tbl, m in rename.items():
     df = df.rename(columns={"Timestamp": "timestamp", **m})
     df["timestamp"] = (pd.to_datetime(df["timestamp"], utc=True)
                        .dt.tz_convert("America/New_York")
-                       .dt.strftime("%Y-%m-%dT%H:%M:%S%z"))
+                       .dt.strftime("%Y-%m-%dT%H:%M:%S%z")
+                       .str.replace(r"(\d\d):(\d\d)$", r"\1\2", regex=True))
     frames.append(df.set_index("timestamp"))
 
 merged = pd.concat(frames, axis=1)[order]
