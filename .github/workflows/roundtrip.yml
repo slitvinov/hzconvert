@@ -13,12 +13,5 @@ jobs:
         with:
           python-version: '3.x'
       - run: pip install pandas
-      - run: ./run.sh || echo "run.sh exited non-zero"
-      - name: head data.csv
-        run: head -3 data.csv | cut -c1-300
-      - name: upload data.csv
-        uses: actions/upload-artifact@v4
-        with:
-          name: data-csv
-          path: data.csv
-          retention-days: 1
+      - run: ./run.sh
+      - run: python3 roundtrip.py

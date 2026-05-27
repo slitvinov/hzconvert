@@ -1,5 +1,6 @@
+import csv
+import math
 import sys
-import pandas as pd
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -13,18 +14,54 @@ with (HERE / "rename.tsv").open() as f:
         ctx, orig, canon = line.rstrip("\n").split("\t")[:3]
         rename.setdefault(ctx, {})[orig] = canon
 
-order = pd.read_csv(HERE / "rubric.tsv", sep="\t")["name"].tolist()
+order = []
+with (HERE / "rubric.tsv").open() as f:
+    next(f)
+    for line in f:
+        order.append(line.split("\t", 1)[0])
 
-frames = []
+streams = {}
+canon_src = {}
 for tbl, m in rename.items():
-    df = pd.read_csv(SRC / f"{tbl}.csv")
-    df = df.rename(columns={"Timestamp": "timestamp", **m})
-    df["timestamp"] = (pd.to_datetime(df["timestamp"], utc=True)
-                       .dt.tz_convert("America/New_York")
-                       .dt.strftime("%Y-%m-%dT%H:%M:%S%z")
-                       .str.replace(r"(\d\d):(\d\d)$", r"\1\2", regex=True))
-    frames.append(df.set_index("timestamp"))
+    fp = (SRC / f"{tbl}.csv").open()
+    rdr = csv.reader(fp)
+    header = next(rdr)
+    streams[tbl] = (fp, rdr)
+    for i, h in enumerate(header):
+        if h in m:
+            canon_src[m[h]] = (tbl, i)
 
-merged = pd.concat(frames, axis=1)[order]
-merged.to_csv(OUT, float_format="%.6g")
-print(f"wrote {OUT}  ({len(merged):,} rows x {merged.shape[1]} cols)")
+dispatch = [canon_src[c] for c in order]
+
+def fmt(v):
+    if v == "": return ""
+    try:
+        x = float(v)
+    except ValueError:
+        return v
+    if not math.isfinite(x):
+        return ""
+    return f"{x:.6g}"
+
+n = 0
+with OUT.open("w", newline="") as out:
+    out.write("timestamp," + ",".join(order) + "\n")
+    while True:
+        rows = {}
+        try:
+            for tbl, (_, rdr) in streams.items():
+                rows[tbl] = next(rdr)
+        except StopIteration:
+            break
+        ts = next(iter(rows.values()))[0]
+        ts = f"{ts[:10]}T{ts[11:19]}{ts[19:22]}{ts[23:]}"
+        out.write(ts)
+        for tbl, idx in dispatch:
+            out.write(",")
+            out.write(fmt(rows[tbl][idx]))
+        out.write("\n")
+        n += 1
+
+for fp, _ in streams.values():
+    fp.close()
+print(f"wrote {OUT}  ({n:,} rows x {len(order)} cols)")
