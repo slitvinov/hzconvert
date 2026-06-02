@@ -4,12 +4,12 @@ Source: figshare https://doi.org/10.6084/m9.figshare.30260233
 
 Run:
 
-    ./run.sh
+    ./bootstrap.sh
 
-Downloads 12 per-table CSVs from figshare, merges them into one
-wide data.csv with renamed canonical headers, and prints a summary.
+Downloads per-table CSVs from figshare, merges them into one wide
+data.csv with renamed canonical headers, and prints a summary.
 
-Output: data.csv (525,600 rows x 202 columns, ~500 MB)
+Output: data.csv
 Expected md5: 09d05a7aa9fb67ba8c86a179e7306006
 
 Files:
