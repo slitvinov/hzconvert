@@ -78,7 +78,7 @@ Load	Plug_basement (kW)	loads/plug/basement
 Load	Solar_rapid_shutdown (kW)	loads/solar_rapid_shutdown
 Weather_station	Outdoor_air_temp (°F)	outdoor/weather/air_temperature
 Weather_station	Rain (Boolean)	outdoor/weather/rain
-Weather_station	Relative_humidity (%)	outdoor/weather/relative_humidity
+Weather_station	Relative_humidity (%)	outdoor/weather/humidity
 Weather_station	Wind_dir (°)	outdoor/weather/wind_direction
 Weather_station	Wind_speed (m_s)	outdoor/weather/wind_speed
 Zone_CO2	Z11_CO2 (ppm)	zones/co2/Z11
