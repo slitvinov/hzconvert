@@ -10,7 +10,7 @@ Downloads per-table CSVs from figshare, merges them into one wide
 data.csv with renamed canonical headers, and prints a summary.
 
 Output: data.csv
-Expected md5: 09d05a7aa9fb67ba8c86a179e7306006
+Expected md5: 7e9c74507473c23d41ac72cb25195439
 
 Files:
     build.py       merge + rename

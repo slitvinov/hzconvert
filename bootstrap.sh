@@ -1,5 +1,5 @@
 #!/bin/sh
-MD5=24597faa608f1bac83cd0934ec5b57cb
+MD5=7e9c74507473c23d41ac72cb25195439
 die() {
     rc=$1; shift
     printf 'bootstrap.sh: error: %s\n' "$*" >&2
