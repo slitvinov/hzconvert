@@ -59,7 +59,7 @@ Load	Elevator_exhaust_fan (kW)	load/exhaust_fan
 Load	Elevator_sump_pump (kW)	load/sump_pump
 Load	Emergency_lighting (kW)	load/emergency_lighting
 Load	Fire_alarm (kW)	load/fire_alarm
-Load	Heat_pump (kW)	load/heat_pump/total
+Load	Heat_pump (kW)	load/heat_pump/mechanical
 Load	Heat_pump_electric (kW)	load/heat_pump/electric
 Load	IT (kW)	load/it
 Load	In (kW)	meter/import
