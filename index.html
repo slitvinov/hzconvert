@@ -191,8 +191,12 @@ function draw(){
     traces.push(fcast(chan,'#ff7f0e'));
     if(ui.plan.checked && chan===PLAN.chan){
       const pl=planHeating();
+      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX,
+        y:pl.band.map(()=>62), type:'scatter', mode:'lines',
+        line:{width:0}, hoverinfo:'skip', showlegend:false});
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.band,
-        name:'comfort floor', type:'scattergl', mode:'lines',
+        name:'comfort floor', type:'scatter', mode:'lines',
+        fill:'tonexty', fillcolor:'rgba(31,119,180,.10)',
         line:{width:1,color:'#2ca02c',dash:'dash'}});
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.Tp,
         name:'planned (forecast + RC heating)', type:'scattergl',
