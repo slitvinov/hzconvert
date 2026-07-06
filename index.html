@@ -18,7 +18,6 @@ button{padding:.2em .8em}
   <button id="mode">mouse: navigate</button>
   <button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button>
   <span id="when">no forecast placed</span>
-  <span id="rmse"></span>
   <span id="planline"></span>
 </div>
 <div id="plot" style="height:600px"></div>
@@ -48,7 +47,7 @@ let chan2=-1;             // compare channel (-1: none)
 
 // ---- toolbar -------------------------------------------------------------
 const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
-  'next','when','rmse','plan','planline']
+  'next','when','plan','planline']
   .map(id=>[id,document.getElementById(id)]));
 ui.chan2.appendChild(new Option('compare: none',-1));
 MODEL.labels.forEach((l,i)=>{
@@ -155,16 +154,6 @@ function hhmm(i){
 }
 
 // ---- drawing --------------------------------------------------------------
-function rmse(fy,minutes){
-  const s=STARTS[cur]; let e=0,n=0;
-  const lim=Math.min(minutes/STRIDE, T);
-  for(let i=0;i<lim;i++){
-    const y=MEASCH[chan][s+(i+1)*STRIDE];
-    if(y==null) continue;
-    const d=fy[i]-y; e+=d*d; n++;
-  }
-  return n? Math.sqrt(e/n).toFixed(2) : '--';
-}
 function meas(c,color){
   return {x0:X0, dx:DX, y:MEASCH[c], name:MODEL.labels[c]+' measured',
           type:'scattergl', mode:'lines',
@@ -213,9 +202,7 @@ function draw(){
         }
       }
       ui.planline.textContent=
-        'plan: preheat '+(pl.pre<0?'not needed':hhmm(pl.pre))+
-        ' · '+pl.energy.toFixed(1)+' kBTU / 7 d · cap '+
-        PLAN.CAP+' kBTU/h, τ 15 h, UA '+PLAN.UA;
+        'preheat '+(pl.pre<0?'not needed':hhmm(pl.pre));
     }
     if(chan2>=0) traces.push(fcast(chan2,'#9467bd'));
     traces.push({x:[t0], y:[MEASCH[chan][STARTS[cur]]],
@@ -223,11 +210,8 @@ function draw(){
       marker:{size:9,color:'#d62728'}, showlegend:false});
     shapes.push({type:'line', x0:t0, x1:t0, y0:0, y1:1, yref:'paper',
       line:{color:'#d62728', width:1, dash:'dot'}});
-    ui.when.textContent='forecast from '+
-      new Date(t0).toISOString().slice(0,16).replace('T',' ')+' UTC';
-    const fy=DECODED[cur][chan];
-    ui.rmse.textContent='RMSE  1h: '+rmse(fy,60)+'  1d: '+rmse(fy,1440)+
-      '  7d: '+rmse(fy,10080)+'  F';
+    ui.when.textContent=
+      new Date(t0).toISOString().slice(0,16).replace('T',' ');
   }
   Plotly.react(ui.plot,traces,{
     xaxis:{type:'date', range:[X0, X0+14*1440*DX],
