@@ -35,7 +35,7 @@ const MODEL={"dec":[{"w":[[0.03654100000858307,0.3621099889278412,0.445432007312
 // -- gain and time constant are the section-4/5 fit, cap is a typical
 // winter pulse level. All three are printed in the status line.
 const PLAN={chan:14, UA:0.0064, TAU:900, CAP:0.5,
-            hi:74, lo:66, wstart:480, wend:1080};
+            hi:74, lo:66, ceil:78, wstart:480, wend:1080};
 
 // ---- page state ----------------------------------------------------------
 const MEASCH={};          // channel index -> measured minutes (lazy)
@@ -180,13 +180,14 @@ function draw(){
     traces.push(fcast(chan,'#ff7f0e'));
     if(ui.plan.checked && chan===PLAN.chan){
       const pl=planHeating();
-      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX,
-        y:pl.band.map(()=>62), type:'scatter', mode:'lines',
-        line:{width:0}, hoverinfo:'skip', showlegend:false});
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.band,
-        name:'comfort floor', type:'scatter', mode:'lines',
-        fill:'tonexty', fillcolor:'rgba(31,119,180,.10)',
+        type:'scatter', mode:'lines', hoverinfo:'skip',
+        showlegend:false,
         line:{width:1,color:'#2ca02c',dash:'dash'}});
+      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX,
+        y:pl.band.map(()=>PLAN.ceil), name:'comfort zone',
+        type:'scatter', mode:'lines', fill:'tonexty',
+        fillcolor:'rgba(44,160,44,.10)', line:{width:0}});
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.Tp,
         name:'planned (forecast + RC heating)', type:'scattergl',
         mode:'lines', line:{width:1.8,color:'#17632a'}});
