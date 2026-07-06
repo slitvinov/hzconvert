@@ -14,10 +14,12 @@ button{padding:.2em .8em}
   <select id="chan"></select>
   <select id="chan2"></select>
   <label><input type="checkbox" id="typ"> typical day</label>
+  <label><input type="checkbox" id="plan" disabled> plan heating</label>
   <button id="mode">mouse: navigate</button>
   <button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button>
   <span id="when">no forecast placed</span>
   <span id="rmse"></span>
+  <span id="planline"></span>
 </div>
 <div id="plot" style="height:600px"></div>
 <script>
@@ -42,6 +44,55 @@ let chan2=-1;             // compare channel (-1: none)
 // ---- toolbar -------------------------------------------------------------
 const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
   'next','when','rmse'].map(id=>[id,document.getElementById(id)]));
+ui.chan2.appendChild(new Option('compare: none',-1));
+MODEL.labels.forEach((l,i)=>{
+  ui.chan.appendChild(new Option(l,i));
+  ui.chan2.appendChild(new Option(l,i));
+});
+ui.chan.value=chan; ui.chan2.value=-1;
+
+// ---- decoder: latent (8) -> all 37 channels ------------------------------
+function layer(l,x,act){
+  const y=new Float64Array(l.w.length);
+  for(let i=0;i<l.w.length;i++){
+    let s=l.b[i]; const r=l.w[i];
+    for(let j=0;j<r.length;j++) s+=r[j]*x[j];
+    y[i]=act ? s/(1+Math.exp(-s)) : s;   // SiLU on hidden layers
+  }
+  return y;
+}
+function decodeAll(k){
+  const out=MODEL.labels.map(()=>new Array(T));
+  for(let t=0;t<T;t++){
+    const z=FC[k].slice(t*K,(t+1)*K);
+    const y=layer(MODEL.dec[2], layer(MODEL.dec[1],
+             layer(MODEL.dec[0], z, true), true), false);
+    for(let c=0;c<y.length;c++)
+      out[c][t]=y[c]*MODEL.ys[c]+MODEL.ym[c];
+  }
+  return out;
+}
+
+// ---- typical-day baseline: hour-of-day mean over the training period -----
+const TYP={};    // decoder weights, channel stats, labels
+// heating planner (zone Z31 only): RC actuator response from the report
+// -- gain and time constant are the section-4/5 fit, cap is a typical
+// winter pulse level. All three are printed in the status line.
+const PLAN={chan:14, UA:0.0064, TAU:900, CAP:0.5,
+            hi:72, lo:66, wstart:480, wend:1080};
+
+// ---- page state ----------------------------------------------------------
+const MEASCH={};          // channel index -> measured minutes (lazy)
+const FC={};              // start index -> latent forecast (lazy)
+const DECODED={};         // start index -> 37 decoded channels
+let cur=-1;               // current forecast start (-1: none)
+let chan=14;     // main channel
+let chan2=-1;             // compare channel (-1: none)
+
+// ---- toolbar -------------------------------------------------------------
+const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
+  'next','when','rmse','plan','planline']
+  .map(id=>[id,document.getElementById(id)]));
 ui.chan2.appendChild(new Option('compare: none',-1));
 MODEL.labels.forEach((l,i)=>{
   ui.chan.appendChild(new Option(l,i));
@@ -99,6 +150,53 @@ function withMeasured(cb){
   need.forEach(c=>load('data/meas'+c+'.js',()=>{ if(--left===0) cb(); }));
 }
 
+// ---- heating planner -------------------------------------------------------
+// Comfort floor: PLAN.hi during workday hours, PLAN.lo otherwise. The RC
+// response is linear, so the minimal schedule is exact: a backward pass
+// makes the required warm-up feasible under the rate cap, the inverse of
+// the RC step gives the heat, and a forward simulation confirms it.
+function bandAt(i){                       // i: minute index into the record
+  const m=i%1440;
+  const w=new Date(X0+i*DX).getDay();     // 0 Sun .. 6 Sat (approx local)
+  const work=(w>=1&&w<=5);
+  return (work && m>=PLAN.wstart && m<PLAN.wend) ? PLAN.hi : PLAN.lo;
+}
+const PLANC={};
+function planHeating(){
+  if(cur in PLANC) return PLANC[cur];
+  const B=DECODED[cur][PLAN.chan], s=STARTS[cur], dt=STRIDE;
+  const gain=1/PLAN.UA;                   // F per kBTU/h, steady state
+  const band=new Array(T), deficit=new Array(T);
+  for(let i=0;i<T;i++){
+    band[i]=bandAt(s+(i+1)*dt);
+    deficit[i]=Math.max(0, band[i]-B[i]);
+  }
+  const req=deficit.slice();              // backward feasibility pass
+  for(let i=T-1;i>0;i--){
+    const slope=dt*(PLAN.CAP*gain-req[i])/PLAN.TAU;
+    req[i-1]=Math.max(req[i-1], req[i]-slope);
+  }
+  const q=new Array(T).fill(0), Tp=new Array(T);
+  let d=0;                                // forward: invert, clamp, simulate
+  for(let i=0;i<T;i++){
+    const want=PLAN.UA*((req[i]-d)*PLAN.TAU/dt + d);
+    const qi=Math.min(PLAN.CAP, Math.max(0, want));
+    d+=dt*(qi*gain-d)/PLAN.TAU;
+    q[i]=qi; Tp[i]=B[i]+d;
+  }
+  let energy=0, pre=-1;
+  for(let i=0;i<T;i++){
+    energy+=q[i]*dt/60;
+    if(pre<0 && q[i]>0) pre=s+(i+1)*dt;
+  }
+  return PLANC[cur]={q, Tp, band, energy, pre};
+}
+function hhmm(i){
+  const m=i%1440;
+  return String(Math.floor(m/60)).padStart(2,'0')+':'+
+         String(m%60).padStart(2,'0');
+}
+
 // ---- drawing --------------------------------------------------------------
 function rmse(fy,minutes){
   const s=STARTS[cur]; let e=0,n=0;
@@ -129,9 +227,35 @@ function draw(){
       name:'typical day', type:'scattergl', mode:'lines',
       line:{width:1,color:'#7f7f7f',dash:'dot'}});
   const shapes=[];
+  ui.plan.disabled = !(cur>=0 && chan===PLAN.chan);
+  ui.planline.textContent='';
   if(cur>=0){
     const t0=X0+STARTS[cur]*DX;
     traces.push(fcast(chan,'#ff7f0e'));
+    if(ui.plan.checked && chan===PLAN.chan){
+      const pl=planHeating();
+      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.band,
+        name:'comfort floor', type:'scattergl', mode:'lines',
+        line:{width:1,color:'#2ca02c',dash:'dash'}});
+      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.Tp,
+        name:'planned (forecast + RC heating)', type:'scattergl',
+        mode:'lines', line:{width:1.8,color:'#17632a'}});
+      let on=-1;                      // shade the hours the slab runs
+      for(let i=0;i<=pl.q.length;i++){
+        const run=i<pl.q.length && pl.q[i]>0;
+        if(run && on<0) on=i;
+        if(!run && on>=0){
+          shapes.push({type:'rect', xref:'x', yref:'paper',
+            x0:t0+(on+1)*STRIDE*DX, x1:t0+(i+1)*STRIDE*DX, y0:0, y1:1,
+            fillcolor:'rgba(214,39,40,.07)', line:{width:0}});
+          on=-1;
+        }
+      }
+      ui.planline.textContent=
+        'plan: preheat '+(pl.pre<0?'not needed':hhmm(pl.pre))+
+        ' · '+pl.energy.toFixed(1)+' kBTU / 7 d · cap '+
+        PLAN.CAP+' kBTU/h, τ 15 h, UA '+PLAN.UA;
+    }
     if(chan2>=0) traces.push(fcast(chan2,'#9467bd'));
     traces.push({x:[t0], y:[MEASCH[chan][STARTS[cur]]],
       type:'scatter', mode:'markers',
@@ -201,6 +325,7 @@ ui.mode.onclick=()=>{
 ui.chan.onchange=()=>{ chan=+ui.chan.value; withMeasured(draw); };
 ui.chan2.onchange=()=>{ chan2=+ui.chan2.value; withMeasured(draw); };
 ui.typ.onchange=draw;
+ui.plan.onchange=draw;
 ui.prev.onclick=()=>show(cur-1);
 ui.next.onclick=()=>show(cur+1);
 window.addEventListener('keydown',e=>{

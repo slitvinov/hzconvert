@@ -24,7 +24,15 @@ Usage
 
 4. The arrow buttons or the left/right keys move the start by 6 hours.
 
-5. The readout shows the start time (UTC) and the forecast's RMSE
+5. "plan heating" (zone Z31 only, after a forecast is placed): the
+   twin plans the minimal radiant-slab schedule that keeps the zone
+   above a comfort floor (72 F on workdays 8:00-18:00, 66 F
+   otherwise), using the report's RC actuator response on top of the
+   placed forecast. Dashed green: the floor; solid dark green: the
+   planned temperature; red shading: hours the slab runs. The status
+   line gives the preheat start, total heat, and the RC constants.
+
+6. The readout shows the start time (UTC) and the forecast's RMSE
    against the measured continuation at 1 hour, 1 day, and 7 days.
 
 How it works
