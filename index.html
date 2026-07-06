@@ -15,6 +15,7 @@ button{padding:.2em .8em}
   <select id="chan2"></select>
   <label><input type="checkbox" id="typ"> typical day</label>
   <label><input type="checkbox" id="plan" disabled> plan heating</label>
+  <select id="dout" disabled></select>
   <button id="mode">mouse: navigate</button>
   <button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button>
   <span id="when">no forecast placed</span>
@@ -42,13 +43,20 @@ const MEASCH={};          // channel index -> measured minutes (lazy)
 const FC={};              // start index -> latent forecast (lazy)
 const DECODED={};         // start index -> 37 decoded channels
 let cur=-1;               // current forecast start (-1: none)
+let dout=0;               // outdoor offset scenario (F)
+const OFFJ={'-10':0,'-5':1,'5':2,'10':3};
+const SD={};              // start_scenario -> latent deltas (lazy)
+const SCEN={};            // start:offset -> decoded channels
 let chan=14;     // main channel
 let chan2=-1;             // compare channel (-1: none)
 
 // ---- toolbar -------------------------------------------------------------
 const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
-  'next','when','plan','planline']
+  'next','when','plan','planline','dout']
   .map(id=>[id,document.getElementById(id)]));
+[-10,-5,0,5,10].forEach(v=>ui.dout.appendChild(
+  new Option('outdoor '+(v>0?'+':'')+v+' F', v)));
+ui.dout.value=0;
 ui.chan2.appendChild(new Option('compare: none',-1));
 MODEL.labels.forEach((l,i)=>{
   ui.chan.appendChild(new Option(l,i));
@@ -66,16 +74,31 @@ function layer(l,x,act){
   }
   return y;
 }
-function decodeAll(k){
+function decodeLat(lat){
   const out=MODEL.labels.map(()=>new Array(T));
   for(let t=0;t<T;t++){
-    const z=FC[k].slice(t*K,(t+1)*K);
+    const z=lat.slice(t*K,(t+1)*K);
     const y=layer(MODEL.dec[2], layer(MODEL.dec[1],
              layer(MODEL.dec[0], z, true), true), false);
     for(let c=0;c<y.length;c++)
       out[c][t]=y[c]*MODEL.ys[c]+MODEL.ym[c];
   }
   return out;
+}
+// scenario latents: baseline + delta, interpolated from 30-min stride
+function scenario(){
+  const key=cur+':'+dout;
+  if(key in SCEN) return SCEN[key];
+  const sd=SD[cur+'_'+OFFJ[dout]], lat=new Array(T*K);
+  for(let t=0;t<T;t++){
+    const pos=(t+1)/6-1, lo=Math.floor(pos), fr=pos-lo;
+    for(let i=0;i<K;i++){
+      const a=lo<0?0:sd[lo*K+i];
+      const b=sd[Math.min(lo+1,sd.length/K-1)*K+i];
+      lat[t*K+i]=FC[cur][t*K+i]+a+(b-a)*fr;
+    }
+  }
+  return SCEN[key]=decodeLat(lat);
 }
 
 // ---- typical-day baseline: hour-of-day mean over the training period -----
@@ -99,6 +122,12 @@ function load(src,cb){
   const s=document.createElement('script');
   s.src=src; s.onload=cb; document.head.appendChild(s);
 }
+function withScenario(cb){
+  if(dout===0){ cb(); return; }
+  const f=cur+'_'+OFFJ[dout];
+  if(f in SD){ cb(); return; }
+  load('data/sd'+f+'.js',cb);
+}
 function withMeasured(cb){
   const need=[chan, chan2].filter(c=>c>=0 && !(c in MEASCH));
   if(!need.length){ cb(); return; }
@@ -118,9 +147,13 @@ function bandAt(i){                       // i: minute index into the record
   return (work && m>=PLAN.wstart && m<PLAN.wend) ? PLAN.hi : PLAN.lo;
 }
 const PLANC={};
+function activeForecast(){
+  return dout===0 ? DECODED[cur] : scenario();
+}
 function planHeating(){
-  if(cur in PLANC) return PLANC[cur];
-  const B=DECODED[cur][PLAN.chan], s=STARTS[cur], dt=STRIDE;
+  const key=cur+':'+dout;
+  if(key in PLANC) return PLANC[key];
+  const B=activeForecast()[PLAN.chan], s=STARTS[cur], dt=STRIDE;
   const gain=1/PLAN.UA;                   // F per kBTU/h, steady state
   const band=new Array(T), deficit=new Array(T);
   for(let i=0;i<T;i++){
@@ -145,7 +178,7 @@ function planHeating(){
     energy+=q[i]*dt/60;
     if(pre<0 && q[i]>0) pre=s+(i+1)*dt;
   }
-  return PLANC[cur]={q, Tp, band, energy, pre};
+  return PLANC[key]={q, Tp, band, energy, pre};
 }
 function hhmm(i){
   const m=i%1440;
@@ -174,6 +207,7 @@ function draw(){
       line:{width:1,color:'#7f7f7f',dash:'dot'}});
   const shapes=[];
   ui.plan.disabled = !(cur>=0 && chan===PLAN.chan);
+  ui.dout.disabled = !(cur>=0);
   ui.planline.textContent='';
   if(cur>=0){
     const t0=X0+STARTS[cur]*DX;
@@ -206,6 +240,12 @@ function draw(){
         'preheat '+(pl.pre<0?'not needed':hhmm(pl.pre));
     }
     if(chan2>=0) traces.push(fcast(chan2,'#9467bd'));
+    if(dout!==0)
+      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:scenario()[chan],
+        name:MODEL.labels[chan]+' forecast, outdoor '+
+             (dout>0?'+':'')+dout+' F',
+        type:'scattergl', mode:'lines',
+        line:{width:1.8,color:'#e377c2'}});
     traces.push({x:[t0], y:[MEASCH[chan][STARTS[cur]]],
       type:'scatter', mode:'markers',
       marker:{size:9,color:'#d62728'}, showlegend:false});
@@ -227,7 +267,7 @@ function draw(){
 // ---- placing the forecast start -------------------------------------------
 function show(k){
   if(k<0||k>=STARTS.length) return;
-  const go=()=>{ if(!(k in DECODED)) DECODED[k]=decodeAll(k);
+  const go=()=>{ if(!(k in DECODED)) DECODED[k]=decodeLat(FC[k]);
                  cur=k; draw(); };
   if(k in FC) withMeasured(go);
   else load('data/fc'+k+'.js',()=>withMeasured(go));
@@ -273,6 +313,7 @@ ui.chan.onchange=()=>{ chan=+ui.chan.value; withMeasured(draw); };
 ui.chan2.onchange=()=>{ chan2=+ui.chan2.value; withMeasured(draw); };
 ui.typ.onchange=draw;
 ui.plan.onchange=draw;
+ui.dout.onchange=()=>{ dout=+ui.dout.value; withScenario(draw); };
 ui.prev.onclick=()=>show(cur-1);
 ui.next.onclick=()=>show(cur+1);
 window.addEventListener('keydown',e=>{
