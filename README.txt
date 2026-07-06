@@ -11,10 +11,14 @@ Usage
 1. Channel: pick any of the 37 temperatures in the dropdown
    (zones/temperature/* is room air, zones/slab_temperature/* is the
    radiant slab). The blue curve is the measured minute record.
+   The second (compare) dropdown also lists the model's 28 input
+   channels — valve positions, supply-water temperatures, weather —
+   so you can overlay what the building was commanded to do; inputs
+   are measurements only and have no forecast.
 
 2. The mouse has two modes, toggled by the button next to the dropdown:
    - "mouse: navigate" (default): drag to pan, scroll wheel to zoom,
-     range slider and 1w/1m/3m/all buttons as usual.
+     range slider as usual.
    - "mouse: click to place start" (button turns red, crosshair
      cursor): click anywhere in the plot to start a forecast there.
 
