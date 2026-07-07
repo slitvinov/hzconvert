@@ -32,11 +32,14 @@ Usage
 
 5. "plan heating" (zone Z31 only, after a forecast is placed): the
    twin plans the minimal radiant-slab schedule that keeps the zone
-   above a comfort floor (72 F on workdays 8:00-18:00, 66 F
+   above a comfort floor (74 F on workdays 8:00-18:00, 66 F
    otherwise), using the report's RC actuator response on top of the
-   placed forecast. Dashed green: the floor; solid dark green: the
-   planned temperature; red shading: hours the slab runs. The status
-   line gives the preheat start, total heat, and the RC constants.
+   placed forecast. The response is two-stage - the water charges the
+   slab (about 3 h), the slab warms the room (about 15 h) - so heating
+   shows the realistic S-shaped delay and the plan preheats several
+   hours before the workday. Dashed green: the floor; solid dark
+   green: the planned temperature; red shading: hours the slab runs.
+   The status line gives the preheat start time.
 
 6. The readout shows the start time (UTC) and the forecast's RMSE
    against the measured continuation at 1 hour, 1 day, and 7 days.
