@@ -51,11 +51,18 @@ const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
   new Option('outdoor '+(v>0?'+':'')+v+' F', v)));
 ui.dout.value=0;
 const LBL=MODEL.labels.concat(MODEL.inputs);
+function fillSel(sel){
+  const gs=document.createElement('optgroup');
+  gs.label='state (37, predicted)';
+  MODEL.labels.forEach((l,i)=>gs.appendChild(new Option(l,i)));
+  const gu=document.createElement('optgroup');
+  gu.label='externals (28, inputs — no forecast)';
+  MODEL.inputs.forEach((l,i)=>
+    gu.appendChild(new Option(l,MODEL.labels.length+i)));
+  sel.appendChild(gs); sel.appendChild(gu);
+}
 ui.chan2.appendChild(new Option('compare: none',-1));
-LBL.forEach((l,i)=>{
-  ui.chan.appendChild(new Option(l,i));
-  ui.chan2.appendChild(new Option(l,i));
-});
+fillSel(ui.chan); fillSel(ui.chan2);
 ui.chan.value=chan; ui.chan2.value=-1;
 
 function layer(l,x,act){
