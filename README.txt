@@ -8,13 +8,15 @@ from the trained checkpoint nlled.pt.
 
 Usage
 -----
-1. Channel: pick any of the 37 temperatures in the dropdown
-   (zones/temperature/* is room air, zones/slab_temperature/* is the
-   radiant slab). The blue curve is the measured minute record.
-   The second (compare) dropdown also lists the model's 28 input
-   channels — valve positions, supply-water temperatures, weather —
-   so you can overlay what the building was commanded to do; inputs
-   are measurements only and have no forecast.
+1. Channel: both dropdowns list all 65 channels — the 37 predicted
+   temperatures (zones/temperature/* is room air,
+   zones/slab_temperature/* is the radiant slab) followed by the
+   model's 28 input channels (valve positions, supply-water
+   temperatures, weather). The blue curve is the measured minute
+   record. Input channels are measurements only: they are what the
+   model is fed, so they have no forecast curve. Use the second
+   (compare) dropdown to overlay one channel on another, e.g. the
+   Z31 valve on the Z31 forecast.
 
 2. The mouse has two modes, toggled by the button next to the dropdown:
    - "mouse: navigate" (default): drag to pan, scroll wheel to zoom,

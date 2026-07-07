@@ -52,12 +52,10 @@ const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
 ui.dout.value=0;
 const LBL=MODEL.labels.concat(MODEL.inputs);
 ui.chan2.appendChild(new Option('compare: none',-1));
-MODEL.labels.forEach((l,i)=>{
+LBL.forEach((l,i)=>{
   ui.chan.appendChild(new Option(l,i));
   ui.chan2.appendChild(new Option(l,i));
 });
-MODEL.inputs.forEach((l,i)=>
-  ui.chan2.appendChild(new Option(l,MODEL.labels.length+i)));
 ui.chan.value=chan; ui.chan2.value=-1;
 
 function layer(l,x,act){
@@ -197,7 +195,7 @@ function draw(){
   ui.planline.textContent='';
   if(cur>=0){
     const t0=X0+STARTS[cur]*DX;
-    traces.push(fcast(chan,'#ff7f0e'));
+    if(chan<MODEL.labels.length) traces.push(fcast(chan,'#ff7f0e'));
     if(ui.plan.checked && chan===PLAN.chan){
       const pl=planHeating();
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.band,
@@ -227,7 +225,7 @@ function draw(){
     }
     if(chan2>=0 && chan2<MODEL.labels.length)
       traces.push(fcast(chan2,'#9467bd'));
-    if(dout!==0)
+    if(dout!==0 && chan<MODEL.labels.length)
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:scenario()[chan],
         name:MODEL.labels[chan]+' forecast, outdoor '+
              (dout>0?'+':'')+dout+' F',
