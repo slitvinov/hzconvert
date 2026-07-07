@@ -18,11 +18,10 @@ Usage
    (compare) dropdown to overlay one channel on another, e.g. the
    Z31 valve on the Z31 forecast.
 
-2. The mouse has two modes, toggled by the button next to the dropdown:
-   - "mouse: navigate" (default): drag to pan, scroll wheel to zoom,
-     range slider as usual.
-   - "mouse: click to place start" (button turns red, crosshair
-     cursor): click anywhere in the plot to start a forecast there.
+2. Tick the "forecast" checkbox: a forecast start appears at the left
+   edge of the current view. Drag the red dotted line with the mouse
+   to move it anywhere; untick the box to clear the forecast. The
+   mouse otherwise navigates as usual (drag to pan, scroll to zoom).
 
 3. The red dotted line marks the forecast start (snapped to a 6-hour
    grid); the orange curve is the one-week forecast, drawn only to the

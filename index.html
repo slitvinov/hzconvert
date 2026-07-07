@@ -6,7 +6,6 @@ body{font-family:-apple-system,sans-serif;margin:1em}
 .bar{display:flex;gap:1em;align-items:center;margin:.4em 0;font-size:14px}
 #chan,#chan2{font-family:ui-monospace,monospace;font-size:12px;max-width:24em}
 button{padding:.2em .8em}
-#mode.place{background:#d62728;color:#fff}
 </style></head><body>
 <h3>nlLED forecast explorer</h3>
 <div class="bar">
@@ -15,7 +14,7 @@ button{padding:.2em .8em}
   <label><input type="checkbox" id="typ"> typical day</label>
   <label><input type="checkbox" id="plan" disabled> plan heating</label>
   <select id="dout" disabled></select>
-  <button id="mode">mouse: navigate</button>
+  <label><input type="checkbox" id="fc"> forecast</label>
   <button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button>
   <span id="when">no forecast placed</span>
   <span id="planline"></span>
@@ -44,7 +43,7 @@ const SCEN={};
 let chan=14;
 let chan2=-1;
 
-const ui=Object.fromEntries(['plot','chan','chan2','typ','mode','prev',
+const ui=Object.fromEntries(['plot','chan','chan2','typ','fc','prev',
   'next','when','plan','planline','dout']
   .map(id=>[id,document.getElementById(id)]));
 [-10,-5,0,5,10].forEach(v=>ui.dout.appendChild(
@@ -183,20 +182,22 @@ function hhmm(i){
          String(m%60).padStart(2,'0');
 }
 
-function meas(c,color){
+function meas(c,color,ax){
   return {x0:X0, dx:DX, y:MEASCH[c], name:LBL[c]+' measured',
-          type:'scattergl', mode:'lines',
+          yaxis:ax||'y', type:'scattergl', mode:'lines',
           line:{width:1,color:color}, connectgaps:false};
 }
-function fcast(c,color){
+function fcast(c,color,ax){
   const t0=X0+STARTS[cur]*DX;
   return {x0:t0+STRIDE*DX, dx:STRIDE*DX, y:DECODED[cur][c],
-          name:MODEL.labels[c]+' forecast', type:'scattergl',
+          name:MODEL.labels[c]+' forecast', yaxis:ax||'y',
+          type:'scattergl',
           mode:'lines', line:{width:1.8,color:color}};
 }
 function draw(){
   const traces=[meas(chan,'#1f77b4')];
-  if(chan2>=0 && chan2 in MEASCH) traces.push(meas(chan2,'#2ca02c'));
+  if(chan2>=0 && chan2 in MEASCH)
+    traces.push(meas(chan2,'#2ca02c','y2'));
   if(ui.typ.checked && chan in MEASCH)
     traces.push({x0:X0+30*DX, dx:60*DX, y:typicalDay(chan),
       name:'typical day', type:'scattergl', mode:'lines',
@@ -236,7 +237,7 @@ function draw(){
         'preheat '+(pl.pre<0?'not needed':hhmm(pl.pre));
     }
     if(chan2>=0 && chan2<MODEL.labels.length)
-      traces.push(fcast(chan2,'#9467bd'));
+      traces.push(fcast(chan2,'#9467bd','y2'));
     if(dout!==0 && chan<MODEL.labels.length)
       traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:scenario()[chan],
         name:MODEL.labels[chan]+' forecast, outdoor '+
@@ -246,25 +247,32 @@ function draw(){
     traces.push({x:[t0], y:[MEASCH[chan][STARTS[cur]]],
       type:'scatter', mode:'markers',
       marker:{size:9,color:'#d62728'}, showlegend:false});
+    lineIdx=shapes.length;
     shapes.push({type:'line', x0:t0, x1:t0, y0:0, y1:1, yref:'paper',
-      line:{color:'#d62728', width:1, dash:'dot'}});
+      editable:true,
+      line:{color:'#d62728', width:2, dash:'dot'}});
     ui.when.textContent=
       new Date(t0).toISOString().slice(0,16).replace('T',' ');
   }
-  Plotly.react(ui.plot,traces,{
+  const layout={
     xaxis:{type:'date', range:[X0, X0+14*1440*DX],
            rangeslider:{visible:true,thickness:0.06}},
     yaxis:{title:{text:'temperature (F)'}},
     hovermode:'x unified', height:600,
     dragmode:'pan', uirevision:'keep',
-    margin:{t:20,r:10,b:70}, shapes,
-    legend:{orientation:'h',y:-0.28}}, {scrollZoom:true});
+    margin:{t:20,r:60,b:70}, shapes,
+    legend:{orientation:'h',y:-0.28}};
+  if(chan2>=0)
+    layout.yaxis2={title:{text:LBL[chan2]}, overlaying:'y',
+                   side:'right', showgrid:false};
+  Plotly.react(ui.plot,traces,layout,{scrollZoom:true});
 }
 
+let lineIdx=-1;
 function show(k){
   if(k<0||k>=STARTS.length) return;
   const go=()=>{ if(!(k in DECODED)) DECODED[k]=decodeLat(FC[k]);
-                 cur=k; draw(); };
+                 cur=k; ui.fc.checked=true; draw(); };
   if(k in FC) withMeasured(go);
   else load('data/fc'+k+'.js',()=>withMeasured(go));
 }
@@ -277,28 +285,12 @@ function parseAxisDate(v){
   return typeof v==='number' ? v
        : Date.parse(v.split('.')[0].replace(' ','T')+'Z');
 }
-let overlay=null;
-ui.mode.onclick=()=>{
-  const place_mode = !overlay;
-  ui.mode.textContent = place_mode ?
-    'mouse: click to place start' : 'mouse: navigate';
-  ui.mode.classList.toggle('place', place_mode);
-  if(!place_mode){ overlay.remove(); overlay=null; return; }
-  overlay=document.createElement('div');
-  overlay.style.cssText=
-    'position:absolute;inset:0;z-index:1000;background:rgba(214,39,40,.03)';
-  ui.plot.style.position='relative';
-  overlay.addEventListener('click',ev=>{
-    try{
-      const bb=overlay.getBoundingClientRect();
-      const xa=ui.plot._fullLayout.xaxis;
-      const px=ev.clientX-bb.left-xa._offset;
-      if(px<0||px>xa._length) return;
-      const r0=parseAxisDate(xa.range[0]), r1=parseAxisDate(xa.range[1]);
-      place(Math.round((r0+(px/xa._length)*(r1-r0)-X0)/DX));
-    }catch(e){ ui.when.textContent='error: '+e.message; }
-  });
-  ui.plot.appendChild(overlay);
+ui.fc.onchange=()=>{
+  if(!ui.fc.checked){
+    cur=-1; ui.when.textContent='no forecast placed'; draw(); return;
+  }
+  const r0=parseAxisDate(ui.plot._fullLayout.xaxis.range[0]);
+  place(Math.round((r0-X0)/DX));
 };
 
 ui.chan.onchange=()=>{ chan=+ui.chan.value; withMeasured(draw); };
@@ -312,5 +304,14 @@ window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft') show(cur-1);
   if(e.key==='ArrowRight') show(cur+1);
 });
-withMeasured(draw);
+withMeasured(()=>{
+  draw();
+  ui.plot.on('plotly_relayout',ev=>{
+    for(const k in ev){
+      const m=k.match(/^shapes\[(\d+)\]\.x0$/);
+      if(m && +m[1]===lineIdx)
+        place(Math.round((parseAxisDate(ev[k])-X0)/DX));
+    }
+  });
+});
 </script></body></html>
