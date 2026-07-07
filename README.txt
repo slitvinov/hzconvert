@@ -41,8 +41,9 @@ Usage
    green: the planned temperature; red shading: hours the slab runs.
    The status line gives the preheat start time.
 
-6. The readout shows the start time (UTC) and the forecast's RMSE
-   against the measured continuation at 1 hour, 1 day, and 7 days.
+6. The readout shows the start time. All times on the page are
+   building-local (America/New_York), including across the two
+   daylight-saving changes in the record.
 
 How it works
 ------------

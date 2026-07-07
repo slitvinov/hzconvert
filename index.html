@@ -182,53 +182,91 @@ function hhmm(i){
          String(m%60).padStart(2,'0');
 }
 
+const CUTS=[1717214400000, 1730613600000, 1741503600000];
+const OFFS=[-14400000, -18000000, -14400000];
+function off(t){
+  let k=0;
+  while(k+1<CUTS.length && t>=CUTS[k+1]) k++;
+  return OFFS[k];
+}
+function loc(t){ return t+off(t); }
+function unloc(v){
+  for(let k=0;k<CUTS.length;k++){
+    const t=v-OFFS[k];
+    if(t>=CUTS[k] && (k===CUTS.length-1 || t<CUTS[k+1])) return t;
+  }
+  return v-OFFS[0];
+}
+function segs(x0,dx,y,tmpl){
+  const cuts=CUTS.slice(1).filter(b=>b>x0 && b<x0+dx*y.length)
+                .map(b=>Math.ceil((b-x0)/dx));
+  cuts.push(y.length);
+  const out=[]; let s=0;
+  for(const e of cuts){
+    if(e>s){
+      const t=Object.assign({},tmpl,
+        {x0:loc(x0+s*dx), dx:dx, y:y.slice(s,e),
+         legendgroup:tmpl.name||'g'});
+      if(s>0) t.showlegend=false;
+      out.push(t);
+    }
+    s=e;
+  }
+  return out;
+}
 function meas(c,color,ax){
-  return {x0:X0, dx:DX, y:MEASCH[c], name:LBL[c]+' measured',
-          yaxis:ax||'y', type:'scattergl', mode:'lines',
-          line:{width:1,color:color}, connectgaps:false};
+  return segs(X0,DX,MEASCH[c],
+    {name:LBL[c]+' measured', yaxis:ax||'y',
+     type:'scattergl', mode:'lines',
+     line:{width:1,color:color}, connectgaps:false});
 }
 function fcast(c,color,ax){
   const t0=X0+STARTS[cur]*DX;
-  return {x0:t0+STRIDE*DX, dx:STRIDE*DX, y:DECODED[cur][c],
-          name:MODEL.labels[c]+' forecast', yaxis:ax||'y',
-          type:'scattergl',
-          mode:'lines', line:{width:1.8,color:color}};
+  return segs(t0+STRIDE*DX,STRIDE*DX,DECODED[cur][c],
+    {name:MODEL.labels[c]+' forecast', yaxis:ax||'y',
+     type:'scattergl', mode:'lines', line:{width:1.8,color:color}});
 }
 function draw(){
-  const traces=[meas(chan,'#1f77b4')];
+  const traces=[...meas(chan,'#1f77b4')];
   if(chan2>=0 && chan2 in MEASCH)
-    traces.push(meas(chan2,'#2ca02c','y2'));
+    traces.push(...meas(chan2,'#2ca02c','y2'));
   if(ui.typ.checked && chan in MEASCH)
-    traces.push({x0:X0+30*DX, dx:60*DX, y:typicalDay(chan),
-      name:'typical day', type:'scattergl', mode:'lines',
-      line:{width:1,color:'#7f7f7f',dash:'dot'}});
+    traces.push(...segs(X0+30*DX,60*DX,typicalDay(chan),
+      {name:'typical day', type:'scattergl', mode:'lines',
+       line:{width:1,color:'#7f7f7f',dash:'dot'}}));
   const shapes=[];
   ui.plan.disabled = !(cur>=0 && chan===PLAN.chan);
   ui.dout.disabled = !(cur>=0);
   ui.planline.textContent='';
   if(cur>=0){
     const t0=X0+STARTS[cur]*DX;
-    if(chan<MODEL.labels.length) traces.push(fcast(chan,'#ff7f0e'));
+    if(chan<MODEL.labels.length) traces.push(...fcast(chan,'#ff7f0e'));
     if(ui.plan.checked && chan===PLAN.chan){
       const pl=planHeating();
-      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.band,
-        type:'scatter', mode:'lines', hoverinfo:'skip',
-        showlegend:false,
-        line:{width:1,color:'#2ca02c',dash:'dash'}});
-      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX,
-        y:pl.band.map(()=>PLAN.ceil), name:'comfort zone',
-        type:'scatter', mode:'lines', fill:'tonexty',
-        fillcolor:'rgba(44,160,44,.10)', line:{width:0}});
-      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:pl.Tp,
-        name:'planned (forecast + RC heating)', type:'scattergl',
-        mode:'lines', line:{width:1.8,color:'#17632a'}});
+      const bandS=segs(t0+STRIDE*DX,STRIDE*DX,pl.band,
+        {type:'scatter', mode:'lines', hoverinfo:'skip',
+         showlegend:false, name:'floor',
+         line:{width:1,color:'#2ca02c',dash:'dash'}});
+      const ceilS=segs(t0+STRIDE*DX,STRIDE*DX,
+        pl.band.map(()=>PLAN.ceil),
+        {name:'comfort zone', type:'scatter', mode:'lines',
+         fill:'tonexty', fillcolor:'rgba(44,160,44,.10)',
+         line:{width:0}});
+      for(let k=0;k<bandS.length;k++){
+        traces.push(bandS[k]);
+        traces.push(ceilS[k]);
+      }
+      traces.push(...segs(t0+STRIDE*DX,STRIDE*DX,pl.Tp,
+        {name:'planned (forecast + RC heating)', type:'scattergl',
+         mode:'lines', line:{width:1.8,color:'#17632a'}}));
       let on=-1;
       for(let i=0;i<=pl.q.length;i++){
         const run=i<pl.q.length && pl.q[i]>0;
         if(run && on<0) on=i;
         if(!run && on>=0){
           shapes.push({type:'rect', xref:'x', yref:'paper',
-            x0:t0+(on+1)*STRIDE*DX, x1:t0+(i+1)*STRIDE*DX, y0:0, y1:1,
+            x0:loc(t0+(on+1)*STRIDE*DX), x1:loc(t0+(i+1)*STRIDE*DX),
+            y0:0, y1:1,
             fillcolor:'rgba(214,39,40,.07)', line:{width:0}});
           on=-1;
         }
@@ -237,25 +275,25 @@ function draw(){
         'preheat '+(pl.pre<0?'not needed':hhmm(pl.pre));
     }
     if(chan2>=0 && chan2<MODEL.labels.length)
-      traces.push(fcast(chan2,'#9467bd','y2'));
+      traces.push(...fcast(chan2,'#9467bd','y2'));
     if(dout!==0 && chan<MODEL.labels.length)
-      traces.push({x0:t0+STRIDE*DX, dx:STRIDE*DX, y:scenario()[chan],
-        name:MODEL.labels[chan]+' forecast, outdoor '+
-             (dout>0?'+':'')+dout+' F',
-        type:'scattergl', mode:'lines',
-        line:{width:1.8,color:'#e377c2'}});
-    traces.push({x:[t0], y:[MEASCH[chan][STARTS[cur]]],
+      traces.push(...segs(t0+STRIDE*DX,STRIDE*DX,scenario()[chan],
+        {name:MODEL.labels[chan]+' forecast, outdoor '+
+              (dout>0?'+':'')+dout+' F',
+         type:'scattergl', mode:'lines',
+         line:{width:1.8,color:'#e377c2'}}));
+    traces.push({x:[loc(t0)], y:[MEASCH[chan][STARTS[cur]]],
       type:'scatter', mode:'markers',
       marker:{size:9,color:'#d62728'}, showlegend:false});
     lineIdx=shapes.length;
-    shapes.push({type:'line', x0:t0, x1:t0, y0:0, y1:1, yref:'paper',
-      editable:true,
+    shapes.push({type:'line', x0:loc(t0), x1:loc(t0), y0:0, y1:1,
+      yref:'paper', editable:true,
       line:{color:'#d62728', width:2, dash:'dot'}});
     ui.when.textContent=
-      new Date(t0).toISOString().slice(0,16).replace('T',' ');
+      new Date(loc(t0)).toISOString().slice(0,16).replace('T',' ');
   }
   const layout={
-    xaxis:{type:'date', range:[X0, X0+14*1440*DX],
+    xaxis:{type:'date', range:[loc(X0), loc(X0)+14*1440*DX],
            rangeslider:{visible:true,thickness:0.06}},
     yaxis:{title:{text:'temperature (F)'}},
     hovermode:'x unified', height:600,
@@ -289,7 +327,7 @@ ui.fc.onchange=()=>{
   if(!ui.fc.checked){
     cur=-1; ui.when.textContent='no forecast placed'; draw(); return;
   }
-  const r0=parseAxisDate(ui.plot._fullLayout.xaxis.range[0]);
+  const r0=unloc(parseAxisDate(ui.plot._fullLayout.xaxis.range[0]));
   place(Math.round((r0-X0)/DX));
 };
 
@@ -310,7 +348,7 @@ withMeasured(()=>{
     for(const k in ev){
       const m=k.match(/^shapes\[(\d+)\]\.x0$/);
       if(m && +m[1]===lineIdx)
-        place(Math.round((parseAxisDate(ev[k])-X0)/DX));
+        place(Math.round((unloc(parseAxisDate(ev[k]))-X0)/DX));
     }
   });
 });
