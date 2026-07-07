@@ -47,13 +47,15 @@ Usage
 
 How it works
 ------------
-Forecasts were precomputed from every 6th hour of the year (1428
+Forecasts were precomputed from every 12th hour of the year (714
 starts): the LSTM's memory is warmed on the preceding day of
-measurements, then the model runs free for one week, fed only outdoor temperature,
-solar radiation, valve positions, and calendar inputs. Each forecast is stored as the
-8-number latent state at 5-minute stride (data/fc<k>.js, loaded on
-first use) and decoded to all 37 channels in the browser by the twin's
-decoder, so switching channels costs nothing. Measured channels load
+measurements, then the model runs free for one week, fed only outdoor
+temperature, solar radiation, valve positions, and calendar inputs.
+The model propagates the 37 standardized channels directly (no
+autoencoder; a compressing variant exists for control, see the
+report). Each forecast is stored as the 37-channel state at 10-minute
+stride (data/fc<k>.js, loaded on first use) and rescaled in the
+browser, so switching channels costs nothing. Measured channels load
 lazily too (data/meas<i>.js).
 
 Regenerating
