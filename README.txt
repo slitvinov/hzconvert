@@ -11,9 +11,10 @@ Usage
 1. Channel: both dropdowns list all 65 channels — the 37 predicted
    temperatures (zones/temperature/* is room air,
    zones/slab_temperature/* is the radiant slab) followed by the
-   model's 21 input channels (the 19 valve positions, outdoor
-   temperature, solar radiation). The blue curve is the measured
-   minute record. Input channels are measurements only: they are what
+   model's 24 input channels (the 19 valve positions, outdoor
+   temperature, solar radiation, and the three calendar inputs:
+   hour-of-day sine and cosine, workday flag). The blue curve is the
+   measured minute record. Input channels are measurements only: they are what
    the model is fed, so they have no forecast curve. Use the second
    (compare) dropdown to overlay one channel on another, e.g. the
    Z31 valve on the Z31 forecast.
