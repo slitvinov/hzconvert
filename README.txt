@@ -11,10 +11,10 @@ Usage
 1. Channel: both dropdowns list all 65 channels — the 37 predicted
    temperatures (zones/temperature/* is room air,
    zones/slab_temperature/* is the radiant slab) followed by the
-   model's 28 input channels (valve positions, supply-water
-   temperatures, weather). The blue curve is the measured minute
-   record. Input channels are measurements only: they are what the
-   model is fed, so they have no forecast curve. Use the second
+   model's 21 input channels (the 19 valve positions, outdoor
+   temperature, solar radiation). The blue curve is the measured
+   minute record. Input channels are measurements only: they are what
+   the model is fed, so they have no forecast curve. Use the second
    (compare) dropdown to overlay one channel on another, e.g. the
    Z31 valve on the Z31 forecast.
 
@@ -48,8 +48,8 @@ How it works
 ------------
 Forecasts were precomputed from every 6th hour of the year (1428
 starts): the LSTM's memory is warmed on the preceding day of
-measurements, then the model runs free for one week, fed only weather, valve
-positions, supply-water temperatures, and calendar inputs. Each forecast is stored as the
+measurements, then the model runs free for one week, fed only outdoor temperature,
+solar radiation, valve positions, and calendar inputs. Each forecast is stored as the
 8-number latent state at 5-minute stride (data/fc<k>.js, loaded on
 first use) and decoded to all 37 channels in the browser by the twin's
 decoder, so switching channels costs nothing. Measured channels load
