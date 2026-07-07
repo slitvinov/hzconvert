@@ -36,8 +36,8 @@ const MEASCH={};
 const FC={};
 const DECODED={};
 let cur=-1;
-let dout=0;
-const OFFJ={'-10':0,'-5':1,'5':2,'10':3};
+let dout=-1;
+const SCENL=["outdoor -10 F", "outdoor -5 F", "outdoor +5 F", "outdoor +10 F", "outdoor = typical day", "solar = typical day", "average weather (both)"];
 const SD={};
 const SCEN={};
 let chan=14;
@@ -46,9 +46,9 @@ let chan2=-1;
 const ui=Object.fromEntries(['plot','chan','chan2','typ','fc','prev',
   'next','when','plan','planline','dout']
   .map(id=>[id,document.getElementById(id)]));
-[-10,-5,0,5,10].forEach(v=>ui.dout.appendChild(
-  new Option('outdoor '+(v>0?'+':'')+v+' F', v)));
-ui.dout.value=0;
+ui.dout.appendChild(new Option('scenario: none',-1));
+SCENL.forEach((l,i)=>ui.dout.appendChild(new Option(l,i)));
+ui.dout.value=-1;
 const LBL=MODEL.labels.concat(MODEL.inputs);
 function fillSel(sel){
   const gs=document.createElement('optgroup');
@@ -87,7 +87,7 @@ function decodeLat(lat){
 function scenario(){
   const key=cur+':'+dout;
   if(key in SCEN) return SCEN[key];
-  const sd=SD[cur+'_'+OFFJ[dout]], lat=new Array(T*K);
+  const sd=SD[cur+'_'+dout], lat=new Array(T*K);
   for(let t=0;t<T;t++){
     const pos=(t+1)/6-1, lo=Math.floor(pos), fr=pos-lo;
     for(let i=0;i<K;i++){
@@ -119,8 +119,8 @@ function load(src,cb){
   s.src=src; s.onload=cb; document.head.appendChild(s);
 }
 function withScenario(cb){
-  if(dout===0){ cb(); return; }
-  const f=cur+'_'+OFFJ[dout];
+  if(dout<0){ cb(); return; }
+  const f=cur+'_'+dout;
   if(f in SD){ cb(); return; }
   load('data/sd'+f+'.js',cb);
 }
@@ -140,7 +140,7 @@ function bandAt(i){
 }
 const PLANC={};
 function activeForecast(){
-  return dout===0 ? DECODED[cur] : scenario();
+  return dout<0 ? DECODED[cur] : scenario();
 }
 function planHeating(){
   const key=cur+':'+dout;
@@ -277,10 +277,9 @@ function draw(){
     }
     if(chan2>=0 && chan2<MODEL.labels.length)
       traces.push(...fcast(chan2,'#9467bd','y2'));
-    if(dout!==0 && chan<MODEL.labels.length)
+    if(dout>=0 && chan<MODEL.labels.length)
       traces.push(...segs(t0+STRIDE*DX,STRIDE*DX,scenario()[chan],
-        {name:MODEL.labels[chan]+' forecast, outdoor '+
-              (dout>0?'+':'')+dout+' F',
+        {name:MODEL.labels[chan]+' forecast, '+SCENL[dout],
          type:'scattergl', mode:'lines',
          line:{width:1.8,color:'#e377c2'}}));
     traces.push({x:[loc(t0)], y:[MEASCH[chan][STARTS[cur]]],

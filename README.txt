@@ -24,11 +24,21 @@ Usage
    to move it anywhere; untick the box to clear the forecast. The
    mouse otherwise navigates as usual (drag to pan, scroll to zoom).
 
-3. The red dotted line marks the forecast start (snapped to a 6-hour
+3. The red dotted line marks the forecast start (snapped to a 12-hour
    grid); the orange curve is the one-week forecast, drawn only to the
    right of it. The measured curve stays visible for comparison.
 
-4. The arrow buttons or the left/right keys move the start by 6 hours.
+4. The arrow buttons or the left/right keys step the start.
+
+4b. Scenarios (after a forecast is placed): replay the same forecast
+   with modified weather. "outdoor +/-N F" shifts the outdoor
+   temperature; "outdoor/solar = typical day" replaces that input by
+   its hour-of-day average over the training period (an average day,
+   diurnal cycle preserved); "average weather" replaces both. The gap
+   between the scenario curve and the forecast is that input's
+   contribution. Note the typical day is an annual average, so in
+   January "average weather" reads "what if this week were as mild as
+   an average day of the year."
 
 5. "plan heating" (zone Z31 only, after a forecast is placed): the
    twin plans the minimal radiant-slab schedule that keeps the zone
