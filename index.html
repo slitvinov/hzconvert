@@ -132,8 +132,9 @@ function withMeasured(cb){
 }
 
 function bandAt(i){
-  const m=i%1440;
-  const w=new Date(X0+i*DX).getDay();
+  const tl=loc(X0+i*DX);
+  const m=Math.floor(tl/60000)%1440;
+  const w=new Date(tl).getUTCDay();
   const work=(w>=1&&w<=5);
   return (work && m>=PLAN.wstart && m<PLAN.wend) ? PLAN.hi : PLAN.lo;
 }
@@ -177,7 +178,7 @@ function planHeating(){
   return PLANC[key]={q, Tp, band, energy, pre};
 }
 function hhmm(i){
-  const m=i%1440;
+  const m=Math.floor(loc(X0+i*DX)/60000)%1440;
   return String(Math.floor(m/60)).padStart(2,'0')+':'+
          String(m%60).padStart(2,'0');
 }
