@@ -116,19 +116,22 @@ function typicalDay(c){
 
 function load(src,cb){
   const s=document.createElement('script');
-  s.src=src; s.onload=cb; document.head.appendChild(s);
+  s.src=src; s.onload=cb; s.onerror=cb;
+  document.head.appendChild(s);
 }
-function withScenario(cb){
-  if(dout<0){ cb(); return; }
-  const f=cur+'_'+dout;
-  if(f in SD){ cb(); return; }
-  load('data/sd'+f+'.js',cb);
-}
-function withMeasured(cb){
-  const need=[chan, chan2].filter(c=>c>=0 && !(c in MEASCH));
-  if(!need.length){ cb(); return; }
-  let left=need.length;
-  need.forEach(c=>load('data/meas'+c+'.js',()=>{ if(--left===0) cb(); }));
+const TRIED={};
+function need(cb){
+  const files=[];
+  for(const c of [chan,chan2])
+    if(c>=0 && !(c in MEASCH)) files.push('meas'+c);
+  if(cur>=0 && !(cur in FC)) files.push('fc'+cur);
+  if(cur>=0 && dout>=0 && !((cur+'_'+dout) in SD))
+    files.push('sd'+cur+'_'+dout);
+  const fresh=files.filter(f=>!TRIED[f]);
+  if(!fresh.length){ cb(); return; }
+  let left=fresh.length;
+  fresh.forEach(f=>{ TRIED[f]=1;
+    load('data/'+f+'.js',()=>{ if(--left===0) need(cb); }); });
 }
 
 function bandAt(i){
@@ -140,7 +143,7 @@ function bandAt(i){
 }
 const PLANC={};
 function activeForecast(){
-  return dout<0 ? DECODED[cur] : scenario();
+  return (dout<0 || !((cur+'_'+dout) in SD)) ? DECODED[cur] : scenario();
 }
 function planHeating(){
   const key=cur+':'+dout;
@@ -236,6 +239,8 @@ function fcast(c,color,ax){
      type:'scattergl', mode:'lines', line:{width:1.8,color:color}});
 }
 function draw(){
+  if(cur>=0 && !(cur in FC)){ cur=-1; ui.fc.checked=false; }
+  if(cur>=0 && !(cur in DECODED)) DECODED[cur]=decodeLat(FC[cur]);
   const traces=[...meas(chan,'#1f77b4')];
   if(chan2>=0 && chan2 in MEASCH)
     traces.push(...meas(chan2,'#2ca02c','y2'));
@@ -285,7 +290,7 @@ function draw(){
     }
     if(chan2>=0 && chan2<MODEL.labels.length)
       traces.push(...fcast(chan2,'#9467bd','y2'));
-    if(dout>=0 && chan<MODEL.labels.length)
+    if(dout>=0 && (cur+'_'+dout) in SD && chan<MODEL.labels.length)
       traces.push(...segs(t0+STRIDE*DX,STRIDE*DX,scenario()[chan],
         {name:MODEL.labels[chan]+' forecast, '+SCENL[dout],
          type:'scattergl', mode:'lines',
@@ -317,10 +322,8 @@ function draw(){
 let lineIdx=-1;
 function show(k){
   if(k<0||k>=STARTS.length||k===cur) return;
-  const go=()=>{ if(!(k in DECODED)) DECODED[k]=decodeLat(FC[k]);
-                 cur=k; ui.fc.checked=true; draw(); };
-  if(k in FC) withMeasured(go);
-  else load('data/fc'+k+'.js',()=>withMeasured(go));
+  cur=k; ui.fc.checked=true;
+  need(draw);
 }
 function place(idx){
   let best=0,bd=Infinity;
@@ -333,24 +336,24 @@ function parseAxisDate(v){
 }
 ui.fc.onchange=()=>{
   if(!ui.fc.checked){
-    cur=-1; ui.when.textContent='no forecast placed'; draw(); return;
+    cur=-1; ui.when.textContent='no forecast placed'; need(draw); return;
   }
   const r0=unloc(parseAxisDate(ui.plot._fullLayout.xaxis.range[0]));
   place(Math.round((r0-X0)/DX));
 };
 
-ui.chan.onchange=()=>{ chan=+ui.chan.value; withMeasured(draw); };
-ui.chan2.onchange=()=>{ chan2=+ui.chan2.value; withMeasured(draw); };
+ui.chan.onchange=()=>{ chan=+ui.chan.value; need(draw); };
+ui.chan2.onchange=()=>{ chan2=+ui.chan2.value; need(draw); };
 ui.typ.onchange=draw;
 ui.plan.onchange=draw;
-ui.dout.onchange=()=>{ dout=+ui.dout.value; withScenario(draw); };
+ui.dout.onchange=()=>{ dout=+ui.dout.value; need(draw); };
 ui.prev.onclick=()=>show(cur-1);
 ui.next.onclick=()=>show(cur+1);
 window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft') show(cur-1);
   if(e.key==='ArrowRight') show(cur+1);
 });
-withMeasured(()=>{
+need(()=>{
   draw();
   ui.plot.on('plotly_relayout',ev=>{
     for(const k in ev){
