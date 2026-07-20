@@ -215,8 +215,16 @@ function segs(x0,dx,y,tmpl){
   }
   return out;
 }
+const DS=5;
+const DISP={};
+function disp(c){
+  if(c in DISP) return DISP[c];
+  const m=MEASCH[c], out=new Array(Math.ceil(m.length/DS));
+  for(let i=0,k=0;i<m.length;i+=DS,k++) out[k]=m[i];
+  return DISP[c]=out;
+}
 function meas(c,color,ax){
-  return segs(X0,DX,MEASCH[c],
+  return segs(X0,DS*DX,disp(c),
     {name:LBL[c]+' measured', yaxis:ax||'y',
      type:'scattergl', mode:'lines',
      line:{width:1,color:color}, connectgaps:false});
@@ -308,7 +316,7 @@ function draw(){
 
 let lineIdx=-1;
 function show(k){
-  if(k<0||k>=STARTS.length) return;
+  if(k<0||k>=STARTS.length||k===cur) return;
   const go=()=>{ if(!(k in DECODED)) DECODED[k]=decodeLat(FC[k]);
                  cur=k; ui.fc.checked=true; draw(); };
   if(k in FC) withMeasured(go);
