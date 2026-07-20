@@ -30,15 +30,18 @@ Usage
 
 4. The arrow buttons or the left/right keys step the start.
 
-4b. Scenarios (after a forecast is placed): replay the same forecast
-   with modified weather. "outdoor +/-N F" shifts the outdoor
-   temperature; "outdoor/solar = typical day" replaces that input by
-   its hour-of-day average over the training period (an average day,
-   diurnal cycle preserved); "average weather" replaces both. The gap
-   between the scenario curve and the forecast is that input's
-   contribution. Note the typical day is an annual average, so in
-   January "average weather" reads "what if this week were as mild as
-   an average day of the year."
+4b. Input checkboxes (after a forecast is placed): each box is one
+   input group - outdoor temperature, solar radiation, the 19 valves,
+   the workday flag. Checked means the model is fed the measured
+   record; unchecking a box replays the forecast with that group
+   replaced by its typical day (hour-of-day average over the training
+   period, diurnal cycle preserved; for the workday flag, the average
+   workday fraction). The gap between the two curves is that input's
+   contribution. One box at a time: the building's responses are
+   strongly non-additive (we measured it), so combinations are not
+   offered rather than approximated. The typical day is an annual
+   average - in January, "outdoor unchecked" reads "what if this week
+   were as mild as an average day of the year."
 
 5. "plan heating" (zone Z31 only, after a forecast is placed): the
    twin plans the minimal radiant-slab schedule that keeps the zone

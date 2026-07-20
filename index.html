@@ -13,7 +13,11 @@ button{padding:.2em .8em}
   <select id="chan2"></select>
   <label><input type="checkbox" id="typ"> typical day</label>
   <label><input type="checkbox" id="plan" disabled> plan heating</label>
-  <select id="dout" disabled></select>
+  <span>inputs:</span>
+  <label><input type="checkbox" id="xo" checked disabled> outdoor</label>
+  <label><input type="checkbox" id="xs" checked disabled> solar</label>
+  <label><input type="checkbox" id="xv" checked disabled> valves</label>
+  <label><input type="checkbox" id="xw" checked disabled> workday</label>
   <label><input type="checkbox" id="fc"> forecast</label>
   <button id="prev">&lsaquo;</button><button id="next">&rsaquo;</button>
   <span id="when">no forecast placed</span>
@@ -36,19 +40,26 @@ const MEASCH={};
 const FC={};
 const DECODED={};
 let cur=-1;
-let dout=-1;
-const SCENL=["outdoor -10 F", "outdoor -5 F", "outdoor +5 F", "outdoor +10 F", "outdoor = typical day", "solar = typical day", "average weather (both)"];
+let mask=0;
+const SR=12;
+const XL=['outdoor','solar','valves','workday'];
 const SD={};
 const SCEN={};
 let chan=14;
 let chan2=-1;
 
 const ui=Object.fromEntries(['plot','chan','chan2','typ','fc','prev',
-  'next','when','plan','planline','dout']
+  'next','when','plan','planline','xo','xs','xv','xw']
   .map(id=>[id,document.getElementById(id)]));
-ui.dout.appendChild(new Option('scenario: none',-1));
-SCENL.forEach((l,i)=>ui.dout.appendChild(new Option(l,i)));
-ui.dout.value=-1;
+const XBOX=[ui.xo,ui.xs,ui.xv,ui.xw];
+function calcMask(){
+  let m=0;
+  XBOX.forEach((b,i)=>{ if(!b.checked) m|=1<<i; });
+  return m;
+}
+function scenLabel(){
+  return 'typical: '+XL.filter((_,i)=>mask>>i&1).join('+');
+}
 const LBL=MODEL.labels.concat(MODEL.inputs);
 function fillSel(sel){
   const gs=document.createElement('optgroup');
@@ -85,11 +96,11 @@ function decodeLat(lat){
   return out;
 }
 function scenario(){
-  const key=cur+':'+dout;
+  const key=cur+':'+mask;
   if(key in SCEN) return SCEN[key];
-  const sd=SD[cur+'_'+dout], lat=new Array(T*K);
+  const sd=SD[cur+'_'+mask], lat=new Array(T*K);
   for(let t=0;t<T;t++){
-    const pos=(t+1)/6-1, lo=Math.floor(pos), fr=pos-lo;
+    const pos=(t+1)/SR-1, lo=Math.floor(pos), fr=pos-lo;
     for(let i=0;i<K;i++){
       const a=lo<0?0:sd[lo*K+i];
       const b=sd[Math.min(lo+1,sd.length/K-1)*K+i];
@@ -125,8 +136,8 @@ function need(cb){
   for(const c of [chan,chan2])
     if(c>=0 && !(c in MEASCH)) files.push('meas'+c);
   if(cur>=0 && !(cur in FC)) files.push('fc'+cur);
-  if(cur>=0 && dout>=0 && !((cur+'_'+dout) in SD))
-    files.push('sd'+cur+'_'+dout);
+  if(cur>=0 && mask>0 && !((cur+'_'+mask) in SD))
+    files.push('sd'+cur+'_'+mask);
   const fresh=files.filter(f=>!TRIED[f]);
   if(!fresh.length){ cb(); return; }
   let left=fresh.length;
@@ -143,10 +154,10 @@ function bandAt(i){
 }
 const PLANC={};
 function activeForecast(){
-  return (dout<0 || !((cur+'_'+dout) in SD)) ? DECODED[cur] : scenario();
+  return (mask===0 || !((cur+'_'+mask) in SD)) ? DECODED[cur] : scenario();
 }
 function planHeating(){
-  const key=cur+':'+dout;
+  const key=cur+':'+mask;
   if(key in PLANC) return PLANC[key];
   const B=activeForecast()[PLAN.chan], s=STARTS[cur], dt=STRIDE;
   const gain=1/PLAN.UA;
@@ -250,7 +261,7 @@ function draw(){
        line:{width:1,color:'#7f7f7f',dash:'dot'}}));
   const shapes=[];
   ui.plan.disabled = !(cur>=0 && chan===PLAN.chan);
-  ui.dout.disabled = !(cur>=0);
+  XBOX.forEach(b=>{ b.disabled = !(cur>=0); });
   ui.planline.textContent='';
   if(cur>=0){
     const t0=X0+STARTS[cur]*DX;
@@ -290,9 +301,9 @@ function draw(){
     }
     if(chan2>=0 && chan2<MODEL.labels.length)
       traces.push(...fcast(chan2,'#9467bd','y2'));
-    if(dout>=0 && (cur+'_'+dout) in SD && chan<MODEL.labels.length)
+    if(mask>0 && (cur+'_'+mask) in SD && chan<MODEL.labels.length)
       traces.push(...segs(t0+STRIDE*DX,STRIDE*DX,scenario()[chan],
-        {name:MODEL.labels[chan]+' forecast, '+SCENL[dout],
+        {name:MODEL.labels[chan]+' forecast, '+scenLabel(),
          type:'scattergl', mode:'lines',
          line:{width:1.8,color:'#e377c2'}}));
     traces.push({x:[loc(t0)], y:[MEASCH[chan][STARTS[cur]]],
@@ -346,7 +357,10 @@ ui.chan.onchange=()=>{ chan=+ui.chan.value; need(draw); };
 ui.chan2.onchange=()=>{ chan2=+ui.chan2.value; need(draw); };
 ui.typ.onchange=draw;
 ui.plan.onchange=draw;
-ui.dout.onchange=()=>{ dout=+ui.dout.value; need(draw); };
+XBOX.forEach((b,i)=>{ b.onchange=()=>{
+  if(!b.checked) XBOX.forEach((o,k)=>{ if(k!==i) o.checked=true; });
+  mask=calcMask(); need(draw);
+}; });
 ui.prev.onclick=()=>show(cur-1);
 ui.next.onclick=()=>show(cur+1);
 window.addEventListener('keydown',e=>{
