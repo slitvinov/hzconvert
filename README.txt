@@ -16,7 +16,12 @@ Files:
     build.py       merge + rename
     roundtrip.py   reconstruct per-table CSVs from data.csv and diff
     summary.py     print rows / columns / span / group counts
+    fit.py         fit the nlLED twin from data.csv (GPU, ~30 min)
     rename.tsv     source_table  original  canonical
     rubric.tsv     canonical  unit  short_desc  long_desc
 
 Requirements: python3, pandas, curl.
+fit.py additionally needs numpy, torch, holidays; it trains an LSTM
+on the 37 zone air/slab temperatures driven by weather, the 19 valve
+commands, and calendar inputs, saves fit.pt, and prints free-running
+rollout checks (full year, held-out May 2025, January onward).
