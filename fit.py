@@ -166,6 +166,9 @@ for L, steps, lr, B in STAGES:
         f"jan-roll {roll_rmse(r0):.2f} F",
         file=sys.stderr,
         flush=True)
+    torch.save({"cell": cell.state_dict(), "head": head.state_dict()},
+               f"fit.{L}.pt")
+    print(f"fit.py: info: saved fit.{L}.pt", file=sys.stderr, flush=True)
 torch.save({"cell": cell.state_dict(), "head": head.state_dict()}, "fit.pt")
 
 rmse = roll_rmse(0)
