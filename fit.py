@@ -66,6 +66,39 @@ EXTERNALS = [
     "zone/Z31/valve",
     "zone/Z32/valve",
     "zone/Z33/valve",
+    "zone/Z01/window_opening/south",
+    "zone/Z03/window_opening/north",
+    "zone/Z04/window_opening/north",
+    "zone/Z05/window_opening/north",
+    "zone/Z11/window_opening/east",
+    "zone/Z11/window_opening/south",
+    "zone/Z12/window_opening/south",
+    "zone/Z13/window_opening/south",
+    "zone/Z13/window_opening/west",
+    "zone/Z15/window_opening/north",
+    "zone/Z15/window_opening/west",
+    "zone/Z16/window_opening/north",
+    "zone/Z17/window_opening/north",
+    "zone/Z21/window_opening/east",
+    "zone/Z21/window_opening/sky",
+    "zone/Z21/window_opening/south",
+    "zone/Z22/window_opening/south",
+    "zone/Z23/window_opening/sky",
+    "zone/Z23/window_opening/south",
+    "zone/Z23/window_opening/west",
+    "zone/Z24/window_opening/sky",
+    "zone/Z24/window_opening/west",
+    "zone/Z25/window_opening/north",
+    "zone/Z25/window_opening/sky",
+    "zone/Z25/window_opening/west",
+    "zone/Z26/window_opening/north",
+    "zone/Z27/window_opening/north",
+    "zone/Z27/window_opening/sky",
+    "zone/Z31/window_opening/sky",
+    "zone/Z31/window_opening/south",
+    "zone/Z32/window_opening/west",
+    "zone/Z33/window_opening/north",
+    "zone/Z33/window_opening/sky",
 ]
 ZONE = "zone/Z31/air_temperature"
 VAL_START = "2025-05-01"
@@ -123,6 +156,14 @@ head.weight.data.zero_()
 head.bias.data.zero_()
 
 
+def ckpt():
+    return {"cell": cell.state_dict(), "head": head.state_dict(),
+            "ym": torch.tensor(ym), "ys": torch.tensor(ys),
+            "um": torch.tensor(um), "us": torch.tensor(us),
+            "zm": zm.cpu(), "zsd": zsd.cpu(),
+            "states": STATES, "externals": EXTERNALS}
+
+
 def free_run(z0, useq, noise=0.0):
     z, hc, zs = z0, None, []
     for t in range(useq.shape[1]):
@@ -166,10 +207,9 @@ for L, steps, lr, B in STAGES:
         f"jan-roll {roll_rmse(r0):.2f} F",
         file=sys.stderr,
         flush=True)
-    torch.save({"cell": cell.state_dict(), "head": head.state_dict()},
-               f"fit.{L}.pt")
+    torch.save(ckpt(), f"fit.{L}.pt")
     print(f"fit.py: info: saved fit.{L}.pt", file=sys.stderr, flush=True)
-torch.save({"cell": cell.state_dict(), "head": head.state_dict()}, "fit.pt")
+torch.save(ckpt(), "fit.pt")
 
 rmse = roll_rmse(0)
 print(
