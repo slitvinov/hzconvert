@@ -17,6 +17,9 @@ Files:
     roundtrip.py   reconstruct per-table CSVs from data.csv and diff
     summary.py     print rows / columns / span / group counts
     fit.py         fit the nlLED twin from data.csv (GPU, ~30 min)
+    fit.pt         trained checkpoint: cell/head weights, normalization
+                   constants (ym ys um us zm zsd), state/external names;
+                   fit.{64,256,1024,4096}.pt are per-stage snapshots
     rename.tsv     source_table  original  canonical
     rubric.tsv     canonical  unit  short_desc  long_desc
 
