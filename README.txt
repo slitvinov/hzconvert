@@ -16,7 +16,11 @@ Files:
     build.py       merge + rename
     roundtrip.py   reconstruct per-table CSVs from data.csv and diff
     summary.py     print rows / columns / span / group counts
-    fit.py         fit the nlLED twin from data.csv (GPU, ~30 min)
+    fit.py         fit the nlLED twin from data.csv (GPU, ~30 min);
+                   an optional zone argument (e.g. python fit.py Z31)
+                   fits a single-zone model on that zone's air/slab
+                   temperatures driven only by weather and its own
+                   valve and windows, saved as fit.<zone>.pt
     fit.pt         trained checkpoint: cell/head weights, normalization
                    constants (ym ys um us zm zsd), state/external names
     rename.tsv     source_table  original  canonical

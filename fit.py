@@ -100,7 +100,40 @@ EXTERNALS = [
     "zone/Z33/window_opening/north",
     "zone/Z33/window_opening/sky",
 ]
-ZONE = "zone/Z31/air_temperature"
+Z31_STATES = [
+    "zone/Z31/air_temperature",
+    "zone/Z31/slab_temperature",
+]
+Z31_EXTERNALS = [
+    "outdoor/weather/air_temperature",
+    "outdoor/weather/solar_radiation",
+    "zone/Z31/valve",
+    "zone/Z31/window_opening/sky",
+    "zone/Z31/window_opening/south",
+]
+Z32_STATES = [
+    "zone/Z32/air_temperature",
+    "zone/Z32/slab_temperature",
+]
+Z32_EXTERNALS = [
+    "outdoor/weather/air_temperature",
+    "outdoor/weather/solar_radiation",
+    "zone/Z32/valve",
+    "zone/Z32/window_opening/west",
+]
+if len(sys.argv) > 1:
+    z = sys.argv[1]
+    if z == "Z31":
+        STATES, EXTERNALS = Z31_STATES, Z31_EXTERNALS
+    elif z == "Z32":
+        STATES, EXTERNALS = Z32_STATES, Z32_EXTERNALS
+    else:
+        sys.exit(f"fit.py: error: unknown zone {z}")
+    ZONE = f"zone/{z}/air_temperature"
+    OUT = f"fit.{z}"
+else:
+    ZONE = "zone/Z31/air_temperature"
+    OUT = "fit"
 VAL_START = "2025-05-01"
 ROLL_CHECK = "2025-01-01"
 HIDDEN = 64
@@ -207,9 +240,9 @@ for L, steps, lr, B in STAGES:
         f"jan-roll {roll_rmse(r0):.2f} F",
         file=sys.stderr,
         flush=True)
-    torch.save(ckpt(), f"fit.{L}.pt")
-    print(f"fit.py: info: saved fit.{L}.pt", file=sys.stderr, flush=True)
-torch.save(ckpt(), "fit.pt")
+    torch.save(ckpt(), f"{OUT}.{L}.pt")
+    print(f"fit.py: info: saved {OUT}.{L}.pt", file=sys.stderr, flush=True)
+torch.save(ckpt(), f"{OUT}.pt")
 
 rmse = roll_rmse(0)
 print(
@@ -218,4 +251,4 @@ print(
     f"jan-roll = {roll_rmse(r0):.2f} F",
     file=sys.stderr,
     flush=True)
-print("fit.py: info: saved fit.pt", file=sys.stderr, flush=True)
+print(f"fit.py: info: saved {OUT}.pt", file=sys.stderr, flush=True)
