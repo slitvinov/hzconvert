@@ -107,6 +107,10 @@ Z31_STATES = [
 Z31_EXTERNALS = [
     "outdoor/weather/air_temperature",
     "outdoor/weather/solar_radiation",
+    "outdoor/facade/south/high",
+    "outdoor/weather/wind_speed",
+    "outdoor/weather/wind_direction/sin",
+    "outdoor/weather/wind_direction/cos",
     "zone/Z31/valve",
     "zone/Z31/window_opening/sky",
     "zone/Z31/window_opening/south",
@@ -118,6 +122,11 @@ Z32_STATES = [
 Z32_EXTERNALS = [
     "outdoor/weather/air_temperature",
     "outdoor/weather/solar_radiation",
+    "outdoor/facade/west/high_left",
+    "outdoor/facade/west/high_right",
+    "outdoor/weather/wind_speed",
+    "outdoor/weather/wind_direction/sin",
+    "outdoor/weather/wind_direction/cos",
     "zone/Z32/valve",
     "zone/Z32/window_opening/west",
 ]
@@ -145,15 +154,24 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 torch.manual_seed(0)
 np.random.seed(0)
 
+WD = "outdoor/weather/wind_direction"
+RAW = [e for e in EXTERNALS if not e.startswith(WD + "/")]
 df = pd.read_csv("data.csv",
                  index_col=0,
-                 usecols=["timestamp"] + STATES + EXTERNALS)
+                 usecols=["timestamp"] + STATES + RAW +
+                 ([WD] if RAW != EXTERNALS else []))
 df.index = pd.to_datetime(df.index, utc=True).tz_convert("America/New_York")
 
 
 def fill(d):
     return (d.replace([np.inf, -np.inf],
                       np.nan).interpolate(method="nearest").ffill().bfill())
+
+
+if RAW != EXTERNALS:
+    th = np.deg2rad(fill(df[WD]))
+    df[WD + "/sin"] = np.sin(th)
+    df[WD + "/cos"] = np.cos(th)
 
 
 v0 = df.index.searchsorted(pd.Timestamp(VAL_START, tz=df.index.tz))

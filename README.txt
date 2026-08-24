@@ -19,18 +19,20 @@ Files:
     fit.py         fit the nlLED twin from data.csv (GPU, ~30 min);
                    an optional zone argument (e.g. python fit.py Z31)
                    fits a single-zone model on that zone's air/slab
-                   temperatures driven only by weather and its own
-                   valve and windows, saved as fit.<zone>.pt
+                   temperatures driven only by weather (incl. facade
+                   temperature and wind) and its own valve and
+                   windows, saved as fit.<zone>.pt
     fit.pt         trained checkpoint: cell/head weights, normalization
                    constants (ym ys um us zm zsd), state/external names
     rename.tsv     source_table  original  canonical
     rubric.tsv     canonical  unit  short_desc  long_desc
 
-Single-zone models (free-running rollout RMSE, air temperature, F):
+Single-zone models (free-running rollout RMSE, air temperature, F;
+externals: weather, facade temperature, wind, own valve and windows):
 
     zone   year roll   val month   jan-roll
-    Z31    1.44        1.55        1.38
-    Z32    0.92        0.94        0.86
+    Z31    1.22        1.38        1.18
+    Z32    0.85        1.09        0.82
 
 Requirements: python3, pandas, curl.
 fit.py additionally needs numpy, torch, holidays; it trains an LSTM
