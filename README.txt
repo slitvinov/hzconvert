@@ -26,6 +26,12 @@ Files:
     rename.tsv     source_table  original  canonical
     rubric.tsv     canonical  unit  short_desc  long_desc
 
+Single-zone models (free-running rollout RMSE, air temperature, F):
+
+    zone   year roll   val month   jan-roll
+    Z31    1.44        1.55        1.38
+    Z32    0.92        0.94        0.86
+
 Requirements: python3, pandas, curl.
 fit.py additionally needs numpy, torch, holidays; it trains an LSTM
 on the 37 zone air/slab temperatures driven by weather, the 19 valve
