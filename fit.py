@@ -115,27 +115,27 @@ Z31_EXTERNALS = [
     "zone/Z31/window_opening/sky",
     "zone/Z31/window_opening/south",
 ]
-Z32_STATES = [
-    "zone/Z32/air_temperature",
-    "zone/Z32/slab_temperature",
+Z33_STATES = [
+    "zone/Z33/air_temperature",
+    "zone/Z33/slab_temperature",
 ]
-Z32_EXTERNALS = [
+Z33_EXTERNALS = [
     "outdoor/weather/air_temperature",
     "outdoor/weather/solar_radiation",
-    "outdoor/facade/west/high_left",
-    "outdoor/facade/west/high_right",
+    "outdoor/facade/north/high",
     "outdoor/weather/wind_speed",
     "outdoor/weather/wind_direction/sin",
     "outdoor/weather/wind_direction/cos",
-    "zone/Z32/valve",
-    "zone/Z32/window_opening/west",
+    "zone/Z33/valve",
+    "zone/Z33/window_opening/north",
+    "zone/Z33/window_opening/sky",
 ]
 if len(sys.argv) > 1:
     z = sys.argv[1]
     if z == "Z31":
         STATES, EXTERNALS = Z31_STATES, Z31_EXTERNALS
-    elif z == "Z32":
-        STATES, EXTERNALS = Z32_STATES, Z32_EXTERNALS
+    elif z == "Z33":
+        STATES, EXTERNALS = Z33_STATES, Z33_EXTERNALS
     else:
         sys.exit(f"fit.py: error: unknown zone {z}")
     ZONE = f"zone/{z}/air_temperature"

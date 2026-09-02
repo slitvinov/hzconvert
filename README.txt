@@ -22,8 +22,12 @@ Files:
                    temperatures driven only by weather (incl. facade
                    temperature and wind) and its own valve and
                    windows, saved as fit.<zone>.pt
-    fit.pt         trained checkpoint: cell/head weights, normalization
-                   constants (ym ys um us zm zsd), state/external names
+    fit.pt         trained joint-model checkpoint: cell/head weights,
+                   normalization constants (ym ys um us zm zsd),
+                   state/external names
+    fit.<zone>.pt  single-zone checkpoints (fit.Z31.pt, fit.Z33.pt),
+                   same layout as fit.pt but with that zone's two
+                   states and its own externals
     rename.tsv     source_table  original  canonical
     rubric.tsv     canonical  unit  short_desc  long_desc
 
@@ -32,7 +36,7 @@ externals: weather, facade temperature, wind, own valve and windows):
 
     zone   year roll   val month   jan-roll
     Z31    1.22        1.38        1.18
-    Z32    0.85        1.09        0.82
+    Z33    0.87        1.41        0.87
 
 Requirements: python3, pandas, curl.
 fit.py additionally needs numpy, torch, holidays; it trains an LSTM
