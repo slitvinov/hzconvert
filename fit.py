@@ -107,7 +107,7 @@ Z31_STATES = [
 Z31_EXTERNALS = [
     "outdoor/weather/air_temperature",
     "outdoor/weather/solar_radiation",
-    "outdoor/facade/south/high",
+    "tabs/Z31/supply_temperature",
     "outdoor/weather/wind_speed",
     "outdoor/weather/wind_direction/sin",
     "outdoor/weather/wind_direction/cos",
@@ -122,7 +122,7 @@ Z33_STATES = [
 Z33_EXTERNALS = [
     "outdoor/weather/air_temperature",
     "outdoor/weather/solar_radiation",
-    "outdoor/facade/north/high",
+    "tabs/Z32_Z33/supply_temperature",
     "outdoor/weather/wind_speed",
     "outdoor/weather/wind_direction/sin",
     "outdoor/weather/wind_direction/cos",

@@ -27,7 +27,7 @@ Expected md5: `a819477def45d4d00e1ab3fdb6dc51bb`
 | `build.py` | merge + rename |
 | `roundtrip.py` | reconstruct per-table CSVs from `data.csv` and diff |
 | `summary.py` | print rows / columns / span / group counts |
-| `fit.py` | fit the nlLED twin from `data.csv` (GPU, ~30 min); an optional zone argument (e.g. `python fit.py Z31`) fits a single-zone model on that zone's air/slab temperatures driven only by weather (incl. facade temperature and wind) and its own valve and windows, saved as `fit.<zone>.pt` |
+| `fit.py` | fit the nlLED twin from `data.csv` (GPU, ~30 min); an optional zone argument (e.g. `python fit.py Z31`) fits a single-zone model on that zone's air/slab temperatures driven only by weather (incl. wind), its TABS supply temperature, and its own valve and windows, saved as `fit.<zone>.pt` |
 | `fit.pt` | trained joint-model checkpoint: cell/head weights, normalization constants (`ym ys um us zm zsd`), state/external names |
 | `fit.<zone>.pt` | single-zone checkpoints (`fit.Z31.pt`, `fit.Z33.pt`), same layout as `fit.pt` but with that zone's two states and its own externals |
 | `han_figs.py` | reproduce Figs 6–18 of Han et al. 2024 from `data.csv` (see below) |
@@ -37,12 +37,12 @@ Expected md5: `a819477def45d4d00e1ab3fdb6dc51bb`
 ## Single-zone models
 
 Free-running rollout RMSE, air temperature, °F; externals: weather,
-facade temperature, wind, own valve and windows.
+TABS supply temperature, wind, own valve and windows.
 
 | zone | year roll | val month | jan-roll |
 |------|-----------|-----------|----------|
-| Z31 | 1.22 | 1.38 | 1.18 |
-| Z33 | 0.87 | 1.41 | 0.87 |
+| Z31 | 0.63 | 0.79 | 0.59 |
+| Z33 | 0.65 | 1.23 | 0.74 |
 
 ## Requirements
 
