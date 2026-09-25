@@ -43,10 +43,10 @@ do
 	* ) id=$1; shift
 	    na=$1; shift
 	    f="figshare/$na.csv"
-	    "$CURL" --remove-on-error -sL -o "$f" "https://ndownloader.figshare.com/files/$id" 2>"$err"
+	    "$CURL" -fsSL -o "$f" "https://ndownloader.figshare.com/files/$id" 2>"$err"
 	    case $? in
 		0) ;;
-		*) die $? "download of $f failed" ;;
+		*) rm -f "$f"; die $? "download of $f failed" ;;
 	    esac
     esac
 done

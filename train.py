@@ -22,10 +22,12 @@ import subprocess
 
 if "google.colab" in sys.modules:
     subprocess.run(["pip", "-q", "install", "holidays"], check=True)
-    if not os.path.isdir("hzconvert"):
-        subprocess.run(["git", "clone", "-q",
-                        "https://github.com/slitvinov/hzconvert"], check=True)
-    os.chdir("hzconvert")
+    if not os.path.exists("bootstrap.sh"):
+        if not os.path.isdir("hzconvert"):
+            subprocess.run(["git", "clone", "-q",
+                            "https://github.com/slitvinov/hzconvert"],
+                           check=True)
+        os.chdir("hzconvert")
 
 if not os.path.exists("data.csv"):
     subprocess.run(["./bootstrap.sh"], check=True)
