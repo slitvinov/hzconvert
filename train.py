@@ -21,7 +21,8 @@ import sys
 import subprocess
 
 if "google.colab" in sys.modules:
-    subprocess.run(["pip", "-q", "install", "holidays"], check=True)
+    subprocess.run(["pip", "-q", "install", "holidays", "matplotlib"],
+                   check=True)
     if not os.path.exists("bootstrap.sh"):
         if not os.path.isdir("hzconvert"):
             subprocess.run(["git", "clone", "-q",
@@ -161,6 +162,13 @@ print("year %.2f F, held out %.2f F"
       % (rmse(meas, pred), rmse(meas[v0:], pred[v0:])))
 
 # %%
+torch.save({"cell": cell.state_dict(), "head": head.state_dict(),
+            "ym": torch.tensor(ym), "ys": torch.tensor(ys),
+            "um": torch.tensor(um), "us": torch.tensor(us),
+            "states": STATES, "externals": EXTERNALS},
+           f"notebook.{ZONE}.pt")
+
+# %%
 import matplotlib.pyplot as plt
 
 t = df.index[1:]
@@ -175,10 +183,3 @@ ax[0].set_title(f"{ZONE} air temperature, free run")
 ax[1].set_title("held-out month")
 fig.tight_layout()
 plt.show()
-
-# %%
-torch.save({"cell": cell.state_dict(), "head": head.state_dict(),
-            "ym": torch.tensor(ym), "ys": torch.tensor(ys),
-            "um": torch.tensor(um), "us": torch.tensor(us),
-            "states": STATES, "externals": EXTERNALS},
-           f"notebook.{ZONE}.pt")
