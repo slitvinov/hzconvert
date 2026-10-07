@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Digital Twin of HouseZero</title>
+<meta name="description" content="nlLED: a recurrent twin of HouseZero's thermal state, learned from one year of minute-resolution sensor data. Code, data and a runnable notebook.">
+<style>
+:root{
+  --ink:#000; --rule:#c9ccd0; --link:#0b4f9e; --wash:#f2f3f4;
+  --sans:system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --serif:Georgia,"Times New Roman",Times,serif;
+  --mono:ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.6}
+.wrap{max-width:46rem;margin:0 auto;padding:0 1.5rem}
+.prose{max-width:38rem}
+
+h1{font-family:var(--sans);font-weight:700;font-size:clamp(1.9rem,4.6vw,2.7rem);
+  line-height:1.08;letter-spacing:-.02em;margin:3.5rem 0 .5rem}
+.standfirst{font-size:1.1rem;margin:0 0 2rem;max-width:34rem}
+
+h2{font-family:var(--sans);font-weight:700;font-size:1.3rem;
+  letter-spacing:-.01em;margin:3rem 0 .9rem}
+h3{font-family:var(--sans);font-weight:700;font-size:1rem;margin:1.9rem 0 .5rem}
+p{margin:0 0 1.05rem}
+a{color:var(--link)}
+
+.links{font-family:var(--sans);font-size:.95rem;margin:0 0 2.2rem;max-width:38rem}
+.links a{margin-right:1.3rem;white-space:nowrap}
+
+img{width:100%;display:block}
+figure{margin:1.8rem 0}
+figcaption,.cap{font-family:var(--sans);font-size:.88rem;
+  margin-top:.7rem;max-width:40rem}
+
+table{border-collapse:collapse;width:100%;max-width:38rem;
+  font-family:var(--sans);font-size:.93rem;margin:.4rem 0 1rem}
+caption{text-align:left;font-family:var(--sans);font-size:.88rem;
+  padding-bottom:.55rem}
+th,td{text-align:right;padding:.42rem .7rem;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+th{font-weight:700;border-bottom:1px solid var(--ink)}
+td{font-variant-numeric:tabular-nums}
+
+pre{font-family:var(--mono);font-size:.85rem;line-height:1.5;
+  background:var(--wash);padding:.85rem 1rem;overflow-x:auto;margin:.4rem 0 1.1rem}
+code{font-family:var(--mono);font-size:.9em}
+
+footer{margin:3.5rem 0 4rem;font-family:var(--sans);font-size:.9rem}
+@media (max-width:640px){body{font-size:16px} h1{margin-top:2.2rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>A Digital Twin of HouseZero</h1>
+<p class="standfirst">A recurrent model that advances the thermal state of a
+  building one minute at a time, learned from a year of its own sensor record.</p>
+
+<img src="fig/zone_year.png" alt="Measured and predicted air temperature for rooms Z31 and Z33 over a full year; the two curves track each other closely across all seasons.">
+<p class="cap">One year of room air temperature: grey is the building's own
+  record, red is the twin. The model is seeded once, on 1&nbsp;June&nbsp;2024,
+  then integrated for 525,599 steps using only weather, the calendar, and the
+  room's own equipment. Nothing corrects it along the way.</p>
+
+<p class="links">
+  <a href="explorer.html">Explore forecasts</a>
+  <a href="https://github.com/slitvinov/hzconvert">Code</a>
+  <a href="https://doi.org/10.6084/m9.figshare.30260233">Data</a>
+  <a href="https://colab.research.google.com/github/slitvinov/hzconvert/blob/main/train.ipynb">Run it in Colab</a>
+</p>
+
+<h2>What this is</h2>
+<div class="prose">
+<p>HouseZero is an ultra-low-energy office building at Harvard that runs on
+  natural ventilation, geothermal heat and radiant slabs, and logs everything it
+  does. We use a year of that record to learn a model of how its rooms warm and
+  cool.</p>
+<p>The model carries 37 measured temperatures, the air and radiant slab of every
+  zone. At each minute it reads its own state together with the things it cannot
+  change or that an operator decides: outdoor temperature, sunlight, the valve
+  commands the building's control system issues, the window openings, and the
+  time of day. A recurrent cell turns that into a correction, which is added back
+  to the state. Repeating the step is what produces the year above.</p>
+<p>Every input is either exogenous or operator-decided, so a forecast never needs
+  a value nobody could know in advance.</p>
+</div>
+
+<figure>
+  <img src="fig/diagram_encode.png" alt="Diagram: measured temperatures are standardised into a state, a propagator advances it one minute using the exogenous inputs, and the output is fed back for a free run.">
+  <figcaption>One step. In a free run the output becomes the next input.</figcaption>
+</figure>
+
+<h2>How well it does</h2>
+<div class="prose">
+<p>Errors below are free-running: the model is started once and then left alone,
+  so any small bias compounds over the interval. May 2025 is held out of the fit
+  entirely.</p>
+</div>
+
+<table>
+  <caption>Root mean squared error of room air temperature, &deg;F.</caption>
+  <thead><tr><th>Model</th><th>Full year</th><th>May (held out)</th><th>Jan onward</th></tr></thead>
+  <tbody>
+    <tr><td>All 37 channels, jointly</td><td>1.4</td><td>1.2</td><td>1.0</td></tr>
+    <tr><td>Room Z31 alone</td><td>0.63</td><td>0.79</td><td>0.59</td></tr>
+    <tr><td>Room Z33 alone</td><td>0.65</td><td>1.23</td><td>0.74</td></tr>
+  </tbody>
+</table>
+
+<div class="prose">
+<p>For scale, guessing the annual average gives 3.0&nbsp;&deg;F, and a fully
+  linear version of the same model gives 2.2&nbsp;&deg;F.</p>
+<p>A single room can be modelled on its own, with two states and only that room's
+  own equipment, and it does better on that room than the 37-channel model does.
+  It is given different inputs, so this is not a controlled comparison.</p>
+</div>
+
+<figure>
+  <img src="fig/zone_may.png" alt="May 2025 in detail: measured and predicted temperature for Z31 and Z33 through the held-out month.">
+  <figcaption>The held-out month in detail. Z33 runs about 1.5&nbsp;&deg;F cold
+    through the first half and recovers; a single-room model has no neighbour to
+    pull it back.</figcaption>
+</figure>
+
+<h3>How far ahead it stays useful</h3>
+<table>
+  <caption>Error by forecast horizon, &deg;F, against two baselines.</caption>
+  <thead><tr><th>Horizon</th><th>This model</th><th>Nothing changes</th><th>Typical day</th></tr></thead>
+  <tbody>
+    <tr><td>1 hour</td><td>0.34</td><td>0.36</td><td>3.00</td></tr>
+    <tr><td>12 hours</td><td>0.98</td><td>2.20</td><td>2.89</td></tr>
+    <tr><td>1 day</td><td>1.07</td><td>1.49</td><td>2.97</td></tr>
+    <tr><td>1 week</td><td>1.32</td><td>2.57</td><td>2.96</td></tr>
+  </tbody>
+</table>
+<div class="prose">
+<p>From about an hour out it beats assuming the building stays where it is, and
+  it stays under 1.4&nbsp;&deg;F all the way to a week.</p>
+</div>
+
+<h2>Examples</h2>
+<div class="prose">
+<p>Everything below runs from the published data. The build is checksummed, so
+  the file you get is the file we trained on.</p>
+</div>
+
+<h3>Build the dataset</h3>
+<pre>git clone https://github.com/slitvinov/hzconvert
+cd hzconvert
+./bootstrap.sh</pre>
+<div class="prose">
+<p>This downloads the twelve published tables, merges them on the minute index,
+  renames every column to a canonical name, and checks the result against a
+  recorded md5. You end up with one file, <code>data.csv</code>, of 525,600 rows
+  and 202 channels covering June 2024 to May 2025.</p>
+</div>
+
+<h3>Train a twin for one room</h3>
+<pre>python3 fit.py Z31</pre>
+<div class="prose">
+<p>About ten minutes on one GPU. Dropping the argument fits the joint model over
+  all 37 channels instead. Checkpoints carry the normalisation constants and the
+  channel names, so a saved model is self-contained.</p>
+</div>
+
+<h3>Use a trained twin</h3>
+<pre>import torch
+
+ck = torch.load("fit.Z31.pt", weights_only=False, map_location="cpu")
+ck["states"]      # ['zone/Z31/air_temperature', 'zone/Z31/slab_temperature']
+ck["externals"]   # the nine inputs, in the order the model expects</pre>
+
+<h3>Or run it in the browser</h3>
+<div class="prose">
+<p>A <a href="https://colab.research.google.com/github/slitvinov/hzconvert/blob/main/train.ipynb">self-contained
+  notebook</a> builds the dataset and trains a room twin from scratch in Colab,
+  with nothing to install locally.</p>
+</div>
+
+<h2>The data stands on its own</h2>
+<div class="prose">
+<p>The merge is reversible: the twelve source files can be rebuilt from the merged
+  one and compared byte for byte, which is how we know nothing was lost. As an
+  external check, the figures of the published HouseZero data descriptor are
+  redrawn from our merged file and reproduce the original.</p>
+</div>
+<figure>
+  <img src="fig/tabs_summer.png" alt="Radiant slab supply and return temperature, zone and outdoor temperature across a summer day, redrawn from the merged dataset.">
+  <figcaption>Radiant-slab operation on a summer day, redrawn from the merged
+    dataset, reproducing Figure 16 of Han et al. (2024).</figcaption>
+</figure>
+<div class="prose">
+<p>Gaps in the record are left visible rather than quietly repaired. The weather
+  station is missing about 5% of the year and outdoor humidity about 80%;
+  interpolation happens only inside the fitting script, and only for the channels
+  a given model actually uses.</p>
+</div>
+
+<h2>Citing this</h2>
+<div class="prose">
+<p>The dataset is published by the Harvard Center for Green Buildings and Cities
+  and described in Han et&nbsp;al., <i>A two-year dataset of energy, environment,
+  and system operations for an ultra-low energy office building</i>, Scientific
+  Data 11, 938 (2024). The code here is MIT licensed; the dataset keeps the
+  licence of its figshare deposit.</p>
+</div>
+
+<footer>
+  <p>Built from <a href="https://github.com/slitvinov/hzconvert">slitvinov/hzconvert</a>.
+    Data: <a href="https://doi.org/10.6084/m9.figshare.30260233">10.6084/m9.figshare.30260233</a>.</p>
+</footer>
+
+</div>
+</body>
+</html>
