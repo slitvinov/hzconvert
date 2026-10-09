@@ -142,6 +142,83 @@ footer{margin:3.5rem 0 4rem;font-family:var(--sans);font-size:.9rem}
   it stays under 1.4&nbsp;&deg;F all the way to a week.</p>
 </div>
 
+<h2>Using it as a benchmark</h2>
+<div class="prose">
+<p>The dataset, the split and the baselines are fixed, so a new model can be
+  compared against these numbers without rerunning anything of ours. The three
+  rules that make a comparison meaningful here:</p>
+<p><b>Seed once, then run free.</b> The model may read the measured state at a
+  single starting minute. After that it advances on its own output. It never sees
+  a measured temperature again, which is what makes a year-long error meaningful
+  rather than a one-step error repeated.</p>
+<p><b>Only inputs a forecast could have.</b> Weather, the calendar, and what the
+  control system commands are fair. Anything the building produces in response is
+  not: the supply-water temperature is the obvious trap, and it is why our
+  single-room numbers are marked as reconstruction rather than forecast.</p>
+<p><b>May 2025 is held out.</b> It must not enter fitting, scaling, or model
+  selection. Report the full year, the held-out month, and January onward.</p>
+</div>
+
+<table>
+  <caption>Numbers to beat, on room Z31 air temperature, &deg;F.</caption>
+  <thead><tr><th>Approach</th><th>Full year</th><th>May (held out)</th></tr></thead>
+  <tbody>
+    <tr><td>Always predict the annual mean</td><td>3.00</td><td>3.00</td></tr>
+    <tr><td>Typical-day profile</td><td>2.97</td><td>2.96</td></tr>
+    <tr><td>Linear twin (PCA + linear propagator)</td><td>2.2</td><td>&mdash;</td></tr>
+    <tr><td>nlLED, all 37 channels jointly</td><td>1.4</td><td>1.2</td></tr>
+    <tr><td>nlLED, room Z31 alone</td><td>0.63</td><td>0.79</td></tr>
+  </tbody>
+</table>
+
+<h3>Scoring your own model</h3>
+<div class="prose">
+<p>Produce one array, <code>pred</code>, where <code>pred[i]</code> is your
+  estimate of the temperature at minute <code>i+1</code>. Then this is the whole
+  evaluation:</p>
+</div>
+<pre>import numpy as np, pandas as pd
+
+CH  = "zone/Z31/air_temperature"
+df  = pd.read_csv("data.csv", index_col=0, usecols=["timestamp", CH])
+df.index = pd.to_datetime(df.index, utc=True).tz_convert("America/New_York")
+y   = df[CH].to_numpy()
+v0  = df.index.searchsorted(pd.Timestamp("2025-05-01", tz=df.index.tz))
+
+def rmse(pred, lo=0):
+    return float(np.sqrt(np.mean((y[lo + 1:] - pred[lo:]) ** 2)))
+
+print("full year", rmse(pred))
+print("held out ", rmse(pred, v0))</pre>
+
+<h3>Comparing against our model directly</h3>
+<div class="prose">
+<p>The trained weights are in the repository, so you can reproduce our row of the
+  table rather than taking it on trust. <code>fit.Z31.pt</code> carries the
+  normalisation constants and the channel order alongside the weights, and
+  <code>explorer.py</code> shows the full rollout loop.</p>
+</div>
+<pre>ck = torch.load("fit.Z31.pt", weights_only=False, map_location="cpu")
+cell = torch.nn.LSTMCell(len(ck["states"]) + len(ck["externals"]) + 3, 64)
+head = torch.nn.Linear(64, len(ck["states"]))
+cell.load_state_dict(ck["cell"]); head.load_state_dict(ck["head"])
+
+z, hc = z0, None                 # z0 = standardised state at the seed minute
+for t in range(horizon):
+    hc = cell(torch.cat([z, u[t]], 1), hc)
+    z  = z + head(hc[0])         # residual step, one minute</pre>
+
+<h3>Other things the data supports</h3>
+<div class="prose">
+<p>Besides scoring forecasts, the record has been used to fit grey-box
+  resistance-capacitance models for the same rooms, to drive a detailed Modelica
+  model of one room as a high-fidelity stand-in for the real building, and to test
+  controllers in simulation before anything is applied to the building itself. The
+  identifiability limit above is the interesting part for control work: the
+  thermostat and the room cancel in the record, so the actuator gain has to come
+  from physics rather than from fitting.</p>
+</div>
+
 <h2>Examples</h2>
 <div class="prose">
 <p>Everything below runs from the published data. The build is checksummed, so
