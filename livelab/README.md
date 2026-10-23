@@ -31,9 +31,7 @@ showing the radiant slab.
 | skylight | 1.07 × 0.885 m, in the W roof slope |
 | surfaces in the drawn solid | slab 8.18, opaque wall 38.50, roof 10.62, glazing 4.18 m² |
 
-The solid is an interpretation, not a fact about the model. A `MixedAir`
-zone is lumped: only areas enter the physics, and the model's areas do
-not all close into one geometry.
+
 [`datConExt`](livelab.mo#L80)
 gives two roof slopes of 2.23 × 4.11 = 9.17 m² each, 18.3 m² in total,
 larger than any 45° gable over an 8.18 m² floor can be (10.6 m²). The
@@ -70,7 +68,7 @@ is evaluated once by `quadratureLobatto` at
 [L60](livelab.mo#L60),
 with a floor of -0.00366 kg/s standing in for infiltration.
 
-## Inputs, outputs, knobs
+## Inputs, outputs
 
 | input | default | what it does |
 |---|---|---|
@@ -105,12 +103,7 @@ minutes on macOS arm64 with `omc` 1.27.0-dev. Drive it with fmpy's
 
 Buildings must come from the fork
 [slitvinov/modelica-buildings](https://github.com/slitvinov/modelica-buildings)
-(13.0.0), not the OpenModelica package index. Every index build, 13.0.0
-and 13.0.1 alike, defines `LimiterWindDirection` as
-`winDir = noEvent(mod(u, uMax))`; `mod` has no time derivative, so
-Pantelides index reduction fails with
-`IndexReduction.pantelidesIndexReduction failed!`. The fork keeps
-`winDir = min(uMax, max(uMin, u))`.
+(13.0.0).
 
 ## What it does
 
