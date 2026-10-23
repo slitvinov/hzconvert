@@ -1,11 +1,10 @@
 # LiveLab, zone Z31: Modelica model and FMU
 
 `livelab.mo` in this directory is a first-principles
-model of the room this dataset calls Z31: an 8.18 m² experimental office
-on the third floor of HouseZero, with a pitched roof, a skylight, two
-operable windows and a TABS radiant slab. Where `fit.Z31.pt` in this repo
-is an LSTM fitted to the measured zone, livelab is the same zone written
-as equations — one
+model of 8.18 m² experimental office on the third floor of HouseZero,
+with a pitched roof, a skylight, two operable windows and a TABS
+radiant slab. Where `fit.Z31.pt` in this repo is an LSTM fitted to the
+measured zone, livelab is the same zone written as equations — one
 [`Buildings.ThermalZones.Detailed.MixedAir`](livelab.mo#L69-L100)
 with 73 states, compiled to an FMU and driven from Python. Z31 is the
 only zone whose openings (`Z31_S_opening`, `Z31_Sky_opening`) match the
