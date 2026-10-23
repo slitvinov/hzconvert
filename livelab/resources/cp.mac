@@ -1,0 +1,22 @@
+/* Wall-surface wind pressure coefficient for low-rise buildings.
+   Swami & Chandra 1988 (ASHRAE) empirical formula.
+
+   theta   wind incidence angle relative to surface normal [rad]
+   G       building side ratio, log(L/W); in livelab.mo this is the
+           parameter p_log_aspect = log(0.85165)
+   Cp_base normalization base pressure coefficient
+*/
+
+display2d: true$
+linel: 100$
+
+Cp_ratio : log(  1.248
+               - 0.703 * sin(theta/2)
+               - 1.175 * sin(theta)^2
+               + 0.131 * sin(2*theta*G)^3
+               + 0.769 * cos(theta/2)
+               + 0.07  * G^2 * sin(theta/2)^2
+               + 0.717 * cos(theta/2)^2 )$
+
+print("Cp / Cp_base =")$
+print(Cp_ratio)$

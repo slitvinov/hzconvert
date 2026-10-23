@@ -1,0 +1,6 @@
+echo(false);
+runScript("resources/buildings.mos");
+loadFile("livelab.mo");
+setCommandLineOptions("--fmiFlags=s:cvode --fmiSources=false");
+buildModelFMU(livelab, version="2.0", fmuType="cs");
+print(getErrorString());

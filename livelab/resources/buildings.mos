@@ -1,0 +1,15 @@
+// Buildings must come from the fork: the package-index builds of both
+// 13.0.0 and 13.0.1 define LimiterWindDirection as noEvent(mod(u, uMax)),
+// which has no time derivative, so index reduction fails.
+updatePackageIndex();
+installPackage(Modelica, "4.1.0", exactMatch=false);
+loadModel(Modelica);
+buildings := getEnvironmentVar("BUILDINGS_DIR");
+if buildings == "" then
+  buildings := getEnvironmentVar("HOME") + "/hz/forks/modelica-buildings";
+end if;
+if not loadFile(buildings + "/Buildings/package.mo") then
+  print("cannot load Buildings from " + buildings + "\n");
+  print("git clone --depth 1 https://github.com/slitvinov/modelica-buildings " + buildings + "\n");
+  exit(1);
+end if;

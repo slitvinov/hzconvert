@@ -1,0 +1,35 @@
+/* Effective ventilation aperture area for the upper half of the window,
+   evaluated at the LiveLab geometry.
+
+   f_nv(z) is the integrand of Wang & Chen 2012 Eq. (15), which gives
+   the height-dependent area available for outflow above the neutral plane.
+
+   k_win_sill    window sill elevation above ground [m]
+   k_win_height  window opening height [m]
+   z0            neutral pressure plane = sill + height/2
+   h             window top = sill + height
+*/
+
+display2d: true$
+linel: 80$
+
+f_nv(z) := (z^(2/7) - z0^(2/7))^(1/2)$
+
+print("Symbolic integrand:")$
+print('f_nv(z) = f_nv(z))$
+
+p_vent_area : 'integrate(f_nv(z), z, z0, h)$
+print("Symbolic aperture area:")$
+print('p_vent_area = p_vent_area)$
+
+/* LiveLab numerics */
+k_win_sill   : 8.7$
+k_win_height : 0.6$
+z0_val : k_win_sill + k_win_height / 2$
+h_val  : k_win_sill + k_win_height$
+
+print(sconcat("Numerics:  z0 = ", z0_val, " m,  h = ", h_val, " m"))$
+
+/* Maxima cannot close-form this integral; evaluate numerically with quadrature */
+val : quad_qag(f_nv(z), z, z0_val, h_val, 6, 'epsrel=1e-10)$
+print(sconcat("p_vent_area = ", first(val), " m^2  (rel. error ~ ", third(val), ")"))$

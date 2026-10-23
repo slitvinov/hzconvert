@@ -1,0 +1,21 @@
+/* Wang & Chen 2012, Eq. (15): mean wind-driven natural ventilation flow rate
+   for a single-sided opening.
+
+   Q       mean volumetric flow [m^3/s]
+   Cd      discharge coefficient
+   l       opening width [m]
+   Cp      pressure coefficient
+   z0      neutral plane height [m]
+   h       opening top height [m]
+   z_ref   reference height for wind profile [m]
+   Ubar    mean wind speed at z_ref [m/s]
+*/
+
+display2d: true$
+linel: 80$
+
+Qbar : (Cd * l * sqrt(Cp) *
+        'integrate(sqrt(z^(2/7) - z0^(2/7)), z, z0, h)
+        / z_ref^(1/7)) * Ubar$
+
+print(Qbar)$

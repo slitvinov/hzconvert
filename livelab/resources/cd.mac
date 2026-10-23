@@ -1,0 +1,29 @@
+/* Window discharge coefficient modifier for hopper windows.
+   Wang & Chen 2015 Eq. (5) vs livelab.mo implementation.
+
+   Cd_conv  discharge coefficient of a converging nozzle (~0.92)
+   Cd_rec   discharge coefficient of a rectangular reference (~0.62);
+            in livelab.mo this is the parameter p_cd_rect
+   alpha    opening angle [rad]; in livelab.mo this is the input
+            u_win_angle (degrees)
+*/
+
+display2d: true$
+linel: 80$
+
+Cd_paper : min(1, Cd_conv / Cd_rec * sqrt(sin(alpha/2)))$
+print("Wang & Chen 2015 Eq. (5):")$
+print(Cd_paper)$
+
+Cd_code : min(1, 0.92 / 0.62 * sqrt(sin(alpha)/2))$
+print("livelab.mo implementation (parenthesis moved):")$
+print(Cd_code)$
+
+/* Tabulate the difference at a few angles */
+print("Comparison at sample angles (deg):")$
+for a in [15, 30, 45, 60, 90] do (
+  paper_val : float(sqrt(sin(a*%pi/180/2))),
+  code_val  : float(sqrt(sin(a*%pi/180)/2)),
+  print(sconcat("  alpha=", a, " deg   sqrt(sin(a/2))=", paper_val,
+                "   sqrt(sin(a)/2)=", code_val))
+)$

@@ -1,0 +1,29 @@
+/* Full assembled mass-flow ventilation equation as implemented in
+   livelab.mo (out_vent_flow). This is Wang & Chen 2012 Eq. (15) for
+   volumetric flow Qbar, scaled by air density to give a mass flow,
+   sign-flipped for inward-flow convention, and clamped to a baseline
+   infiltration value.
+
+   var_cd       discharge-coefficient modifier (Wang & Chen 2015 hopper, see cd.mac)
+   Cd_rect      rectangular reference Cd  (= p_cd_rect = 0.62)
+   l            opening width  (= p_win_width)
+   Cp           pressure coefficient (Swami & Chandra 1988, see cp.mac)
+   p_vent_area  aperture area (see vent_area.mac)
+   winSpe       wind speed at z_ref [m/s]
+   z_ref        reference height for wind profile = 10 m
+   rho_air      ambient air density = 1.2 kg/m^3
+   Q_min        infiltration floor = -0.00366 kg/s
+*/
+
+display2d: true$
+linel: 90$
+
+Q_unclamped : -1 * (var_cd * Cd_rect * l * sqrt(abs(Cp)) * p_vent_area)
+              / z_ref^(1/7) * winSpe * rho_air$
+
+print("Mass flow before clamp:")$
+print(Q_unclamped)$
+
+out_vent_flow : min(Q_unclamped, Q_min)$
+print("As coded (with infiltration floor):")$
+print(out_vent_flow)$

@@ -1,0 +1,6 @@
+runScript("resources/buildings.mos");
+loadFile("livelab.mo");
+checkModel(livelab);
+getErrorString();
+buildModel(livelab);
+getErrorString();
