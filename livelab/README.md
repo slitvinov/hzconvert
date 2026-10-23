@@ -32,8 +32,9 @@ showing the radiant slab.
 
 
 [`datConExt`](livelab.mo#L80)
-gives two roof slopes of 2.23 × 4.11 = 9.17 m² each, 18.3 m² in total,
-larger than any 45° gable over an 8.18 m² floor can be (10.6 m²). The
+gives roof slopes of 2.23 × 4.11 = 9.17 m² and, net of the skylight,
+2.23 × 4.11 − 1.07 × 1.77 − 0.2 = 7.07 m²: 16.2 m² in total, larger than
+any 45° gable over an 8.18 m² floor can be (10.6 m²). The
 drawing reproduces `AFlo`, `hRoo`, the volume and all three window sizes
 and orientations exactly, and its south gable wall (8.18 m²) matches
 [`datConExtWin[1]`](livelab.mo#L87-L99)
@@ -141,8 +142,9 @@ dimensions in `livelab.mo`) and `sim_figs.py` (both runs, through fmpy).
 No HVAC controller. TABS flow and supply temperature are constants and
 nothing tracks a setpoint, so the zone goes wherever physics takes it;
 the real Z31 sits near 22 °C because of a controller the model does not
-have. No lighting or equipment loads beyond occupancy gain. No interior
-shade dynamics (`ctrl_shade` is hardcoded to 1). CO2 generation off by
+have. No lighting or equipment loads beyond occupancy gain. The exterior shade is
+pinned fully deployed (`ctrl_shade` is hardcoded to 1; `glz_window` sets
+`haveInteriorShade = false`, `haveExteriorShade = true`). CO2 generation off by
 default.
 
 ## References
